@@ -1,0 +1,353 @@
+#!/usr/bin/env /usr/bin/python3
+def prrint(*a,**s):
+ print(*a,**s)
+###############################
+prrint('\x1b[5;93m[compiling]\x1b[0m',end='\r')
+from sys import argv
+from os import system as sh
+vars=dict()
+defnow='global'
+mod=[]
+struct=[]
+maint=['str','int','float','char','double','bool','void']
+unpac={'c':'','u':'unsigned','l':'long'}
+io={
+ 'int':'i',
+ 'lint':'li',
+ 'llint':'Li',
+ 'float':'f',
+ 'double':'lf',
+ 'ldouble':'Lf',
+ 'char':'c',
+ 'str':'s',
+ 'uint':'u',
+ 'luint':'lu',
+ 'lluint':'Lu',
+}
+struop=''
+struos=0
+debug=dict()
+###############################
+def unp(q,ww=0):
+ if q[-1]=='*':
+  q=q[:-1]
+  addr=1
+ else:
+  addr=0
+ if '.'+q in struct:
+  return q
+ be=''
+ en=''
+ for w in maint:
+  if q[-len(w):] == w:
+   en=w
+   be=q[:-len(w)]
+   break
+ if ww == 2:
+  if be+en:
+   if 'l' in be and en == 'float':
+    be=be[:be.index('l')]+be[be.index('l')+1:]
+    en='double'
+   return ''.join(sorted(be))+en
+  else:
+   return q
+ if en == 'str':
+  en='char'
+  global mod
+  mod+=['string.h']
+ if ww:
+  if be+en:
+   return 1
+  else:
+   return 0
+ if be+en:
+  toex=''
+  for w in unpac.keys():
+   toex+=(unpac[w]+' ')*be.count(w)
+  return toex+en+'*'*addr
+ return q+'*'*addr
+###############################
+def init(q,fun):
+ q=q.strip()
+ q=' '.join(q.split())
+ type=q.split()[0]
+ q=' '.join(q.split()[1:]).strip()
+ name=q.split('[')[0].split('(')[0].strip()
+ q=q[len(name):]
+ if fun not in vars.keys():
+  vars[fun]=dict()
+ vars[fun][name]=unp(type,2)
+ return [type,name]
+###############################
+a=open(argv[1])
+q=a.read()
+a.close()
+quo=0
+###############################
+q=''.join([chr(ord(w)%50000) for w in q])
+q=q.replace('/*',chr(50001))
+q=q.replace('*/',chr(50002))
+com=1
+nq=''
+for w in q:
+ if w==chr(50001):
+  com=0
+ if com:
+  nq+=w
+ if w==chr(50002):
+  com=1
+q=nq
+###############################
+nq=''
+for w in q:
+ if w == '"' and quo in [1,0]:
+  quo=1-quo
+  nq+=w
+  continue
+ if w == "'" and quo in [2,0]:
+  quo=2-quo
+  nq+=w
+  continue
+ if quo:
+  nq+=chr(50000+ord(w))
+ else:
+  nq+=w
+q=nq
+##############################
+q=q.split('\n')
+q=[w for w in q if w != ' '*len(w)]
+q=[[0,w] for w in q]
+for w in q:
+ while w[1][0] == ' ':
+  w[1]=w[1][1:]
+  w[0]+=1
+ while w[1][-1] == ' ':
+  w[1]=w[1][:-1]
+##############################
+for w in q:
+ if w[1][-1] not in ':;' and w[1].split(' ')[0] not in ['import']:
+   w[1]+=';'
+##############################
+deb=-1
+for w in q:
+ if w[1][:5]=='debug' and w[1][-1]==':':
+  deb=w[0]
+  w[1]='global:'
+ elif w[0]<=deb:
+  deb=-1
+ elif deb>-1:
+  wd=w[1].split('=')
+  debug[wd[0]]=wd[1]
+  w[1]='int debug_'+w[1]
+##############################
+main=[]
+inmain=1
+for w in q:
+ if w[0] == 0:
+  inmain=1
+ if w[1][:4] == 'def ':
+  inmain=0
+ if w[1][:6] == 'global' and w[1][-1] == ':':
+  inmain=2
+  w[1]=''
+ if inmain==1:
+  main+=[w[:]]
+  w[1]=''
+ if inmain==2:
+  w[0]-=1
+q=[w for w in q if w[1] != '']
+q+=[[0,'def int main():']]
+for w in main:
+ w[0]+=1
+q+=main
+##############################
+linow=-1
+defnow='global'
+for w in q:
+ linow+=1
+ if w[0] <= struos:
+  struop=''
+ if w[0]==0:
+  defnow='global'
+ if w[1][:7] == 'import ':
+  w[1]='#include <'+w[1][7:]+'>'
+ elif w[1][:4] == 'for ' and w[1][-1] == ':':
+  w[1]=w[1][4:-1].strip()
+  if ';' in w[1]:
+   w[1]='for('+w[1].replace('and','&&').replace('or','||')+')'
+  else:
+   ext='for('
+   if '<' in w[1]:
+    if '=' in w[1]:
+     ext+=w[1].split('=')[1].split('<')[0]
+     ext+='='
+     ext+=w[1].split('<')[0].split('=')[0]
+     ext+=';'
+     ext+=w[1].split('=')[1]
+     ext+=';'
+     ext+=w[1].split('=')[1].split('<')[0]
+     ext+='++)'
+    else:
+     ext+=w[1].split('<')[0]
+     ext+='=0;'
+     ext+=w[1]
+     ext+=';'
+     ext+=w[1].split('<')[0]
+     ext+='++)'
+   if '>' in w[1]:
+    if '=' in w[1]:
+     ext+=w[1].split('=')[1].split('>')[0]
+     ext+='='
+     ext+=w[1].split('>')[0].split('=')[0]
+     ext+=';'
+     ext+=w[1].split('=')[1]
+     ext+=';'
+     ext+=w[1].split('=')[1].split('>')[0]
+     ext+='--)'
+    else:
+     ext+=w[1].split('>')[0]
+     ext+='=0;'
+     ext+=w[1]
+     ext+=';'
+     ext+=w[1].split('>')[0]
+     ext+='--)'
+   w[1]=ext
+ elif w[1][:6] == 'while ' and w[1][-1] == ':':
+  w[1]='while('+w[1][6:-1].replace('and','&&').replace('or','||')+')'
+ elif w[1] == 'pass;':
+  w[1]='{}'
+ elif w[1][:5] == 'elif ' and w[1][-1] == ':':
+  w[1]='elif('+w[1][5:-1].replace('and','&&').replace('or','||')+')'
+ elif w[1][:4] == 'else' and w[1][-1] == ':':
+  w[1]='else'
+ elif w[1][:3] == 'if ' and w[1][-1] == ':':
+  w[1]='if('+w[1][3:-1].replace('and','&&').replace('or','||')+')'
+ elif w[1][:4] == 'scan' and w[1][5]!='f':
+  mod+=['stdio.h']
+  tmp1=''
+  tmp2=''
+  w[1]='('.join(w[1].split('(')[1:])
+  w[1]=')'.join(w[1].split(')')[:-1])
+  for e in w[1].split(','):
+   if e[0] == '`':
+    add=0
+    e=e[1:]
+   else:
+    add=1
+   if '`' in e:
+    tmp1+='%'+e.split('`')[1].strip()
+    tmp2+=',&('*add+e.split('`')[0].strip()+')'*add
+   else:
+    tmptype=e.split('[')[0].strip().replace('*','')
+    if tmptype in vars[defnow].keys():
+     tmp1+='%'+io[vars[defnow][tmptype].replace('*','')]
+     tmp2+=',&('*add+e.strip()+')'*add
+    elif tmptype in vars['global'].keys():
+     tmp1+='%'+io[vars['global'][tmptype].replace('*','')]
+     tmp2+=',&('*add+e.strip()+')'*add
+    else:
+     prrint('\x1b[31m[error line '+str(linow)+']\x1b[0m could not scan '+tmptype)
+     exit()
+  w[1]='scanf("'+tmp1+'"'+tmp2+');'
+ elif w[1][:5] == 'print' and w[1][6]!='f':
+  mod+=['stdio.h']
+  tmp1=[]
+  tmp2=''
+  sep=' '
+  end='\\n'
+  w[1]='('.join(w[1].split('(')[1:])
+  w[1]=')'.join(w[1].split(')')[:-1])
+  for e in w[1].split(','):
+   e=e.strip()
+   if e=='':
+    pass
+   elif len(e.split('='))==3 and e.split('=')[0].strip()=='format':
+    format,sep,end=e.split('=')
+    sep=sep[1:-1]
+    end=end[1:-1]
+   elif e[0] == '"' and e[-1] == '"':
+    tmp1+=[e[1:-1]]
+   elif e[0] == "'" and e[-1] == "'":
+    tmp1+=[e[1:-1]]
+   elif '`' in e:
+    tmp1+=['%'+e.split('`')[1].strip()]
+    tmp2+=','+e.split('`')[0].strip()
+   else:
+    tmptype=e.split('[')[0].strip().replace('*','')
+    if tmptype in vars[defnow].keys():
+     tmp1+=['%'+io[vars[defnow][tmptype].replace('*','')]]
+     tmp2+=','+e.strip()
+    elif tmptype in vars['global'].keys():
+     tmp1+=['%'+io[vars['global'][tmptype].replace('*','')]]
+     tmp2+=','+e.strip()
+    else:
+     prrint('\x1b[31m[error line '+str(linow)+']\x1b[0m could not print '+tmptype)
+     exit()
+  w[1]='printf("'+sep.join(tmp1)+end+'"'+tmp2+');'
+  if 'printlimit' in debug:
+   w[1]+='debug_printlimit--;if (debug_printlimit == 0) {printf("\033[31m[debug_printlimit]\033[0m\\n");debug_printlimit=1/debug_printlimit;}'
+ elif w[1][:4] == 'def ' and w[1][-1] == ':':
+  w[1]=w[1][4:-1]
+  defnow=w[1].split('(')[0].split()[1]
+  vars[defnow]=dict()
+  nw=init(w[1].split('(')[0],'global')
+  nw=unp(nw[0])+' '+nw[1]+'('
+  nwl=[]
+  for e in w[1].split('(')[1].split(')')[0].split(','):
+   if e != ' '*len(e):
+    tmp=init(e,defnow)
+    nwl+=[unp(tmp[0])+' '+tmp[1]]
+  w[1]=nw+','.join(nwl)+')'
+ elif w[1][:7] == 'struct ' and w[1][-1]==':':
+  struop='.'+w[1][7:-1].strip()
+  struct+=[struop]
+  w[1]=w[1][:-1]
+  struos=w[0]
+ elif unp(w[1].split(' ')[0],1):
+  tmp=' '.join(w[1][:-1].split(' ')[1:])
+  tmptype=w[1].split(' ')[0]
+  nw=unp(tmptype)+' '
+  for e in tmp.split(','):
+   ee=e.split('=')[0]
+   init(tmptype+' '+ee,defnow+struop)
+   if '.'+tmptype in struct:
+    for ww in vars[defnow+'.'+tmptype].keys():
+     init(vars[defnow+'.'+tmptype][ww]+' '+ee+'.'+ww,defnow)
+   nw+=e+','
+  if '.'+tmptype in struct:
+   nw='struct '+nw
+  w[1]=nw[:-1]+';'
+##############################
+q+=[[0,'',0]]
+struop=-1
+for w in range(len(q)-1):
+ if q[w][1][:7]=='struct ':
+  struop=q[w][0]
+ if q[w][0] == q[w+1][0]:
+  q[w]=' '*q[w][0]+q[w][1]
+ elif q[w][0] > q[w+1][0]:
+  q[w]=' '*q[w][0]+q[w][1]+'}'*(q[w][0]-q[w+1][0])
+ elif q[w][0] < q[w+1][0]:
+  q[w]=' '*q[w][0]+q[w][1]+'{'*(q[w+1][0]-q[w][0])
+ if q[w+1][0]<=struop:
+  q[w]+=';'
+  struop=-1
+q[-1]=''
+##############################
+q='\n'.join(q)
+q=''.join([chr(ord(w)%50000) for w in q])
+##############################
+mod=list(set(mod))
+for w in mod:
+ q='#include <'+w+'>\n'+q
+##############################
+a=open('outcode.c','w')
+a.write(q)
+a.close()
+##############################
+if len(argv)==2 and sh('gcc outcode.c') == 0:
+ prrint('\x1b[93m[compiled] \x1b[0m')
+ q=sh('./a.out')
+ if q:
+  prrint()
+ prrint('\x1b[93m[exit code: '+str(q)+']\x1b[0m')
