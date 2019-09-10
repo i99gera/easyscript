@@ -174,8 +174,10 @@ for w in q:
  elif w[1][:4] == 'for ' and w[1][-1] == ':':
   w[1]=w[1][4:-1].strip()
   if ';' in w[1]:
-   w[1]='for('+w[1].replace('and','&&').replace('or','||')+')'
+   w[1]='for('+w[1].replace('and','&&').replace('or','||').replace('not','!')+')'
   else:
+   test=':'.join(w[1].split(':')[1:]).replace('and','&&').replace('or','||').replace('not','!')
+   w[1]=w[1].split(':')[0]
    ext='for('
    if '<' in w[1]:
     if '=' in w[1]:
@@ -183,14 +185,20 @@ for w in q:
      ext+='='
      ext+=w[1].split('<')[0].split('=')[0]
      ext+=';'
-     ext+=w[1].split('=')[1]
+     if test:
+      ext+=test
+     else:
+      ext+=w[1].split('=')[1]
      ext+=';'
      ext+=w[1].split('=')[1].split('<')[0]
      ext+='++)'
     else:
      ext+=w[1].split('<')[0]
      ext+='=0;'
-     ext+=w[1]
+     if test:
+      ext+=test
+     else:
+      ext+=w[1]
      ext+=';'
      ext+=w[1].split('<')[0]
      ext+='++)'
@@ -200,28 +208,36 @@ for w in q:
      ext+='='
      ext+=w[1].split('>')[0].split('=')[0]
      ext+=';'
-     ext+=w[1].split('=')[1]
+     if test:
+      ext+=test
+     else:
+      ext+=w[1].split('=')[1]
      ext+=';'
      ext+=w[1].split('=')[1].split('>')[0]
      ext+='--)'
     else:
      ext+=w[1].split('>')[0]
      ext+='=0;'
-     ext+=w[1]
+     if test:
+      ext+=test
+     else:
+      ext+=w[1]
      ext+=';'
      ext+=w[1].split('>')[0]
      ext+='--)'
    w[1]=ext
  elif w[1][:6] == 'while ' and w[1][-1] == ':':
-  w[1]='while('+w[1][6:-1].replace('and','&&').replace('or','||')+')'
+  w[1]='while('+w[1][6:-1].replace('and','&&').replace('or','||').replace('not','!')+')'
+ elif w[1][:4] == 'for ' and w[1][-1] != ':':
+  w[1]='for('+w[1][4:-1].replace('and','&&').replace('or','||').replace('not','!')+')'
  elif w[1] == 'pass;':
   w[1]='{}'
  elif w[1][:5] == 'elif ' and w[1][-1] == ':':
-  w[1]='elif('+w[1][5:-1].replace('and','&&').replace('or','||')+')'
+  w[1]='elif('+w[1][5:-1].replace('and','&&').replace('or','||').replace('not','!')+')'
  elif w[1][:4] == 'else' and w[1][-1] == ':':
   w[1]='else'
  elif w[1][:3] == 'if ' and w[1][-1] == ':':
-  w[1]='if('+w[1][3:-1].replace('and','&&').replace('or','||')+')'
+  w[1]='if('+w[1][3:-1].replace('and','&&').replace('or','||').replace('not','!')+')'
  elif w[1][:4] == 'scan' and w[1][5]!='f':
   mod+=['stdio.h']
   tmp1=''
@@ -263,8 +279,8 @@ for w in q:
     pass
    elif len(e.split('='))==3 and e.split('=')[0].strip()=='format':
     format,sep,end=e.split('=')
-    sep=sep[1:-1]
-    end=end[1:-1]
+    sep=sep.strip()[1:-1]
+    end=end.strip()[1:-1]
    elif e[0] == '"' and e[-1] == '"':
     tmp1+=[e[1:-1]]
    elif e[0] == "'" and e[-1] == "'":
