@@ -2,7 +2,7 @@
 def prrint(*a,**s):
  print(*a,**s)
 ###############################
-prrint('\x1b[5;93m[compiling]\x1b[0m',end='\r')
+#prrint('\x1b[93m[compiling \x1b[93;5m...\x1b]\x1b[0m',end='\r')
 from sys import argv
 from os import system as sh
 vars=dict()
@@ -27,6 +27,7 @@ io={
 struop=''
 struos=0
 debug=dict()
+casebr=1
 ###############################
 def unp(q,ww=0):
  if q[-1]=='*':
@@ -162,14 +163,38 @@ for w in main:
 q+=main
 ##############################
 linow=-1
+switch=[]
 defnow='global'
 for w in q:
  linow+=1
+ if switch and w[0] <= switch[-1][0]:
+  switch=switch[:-1]
  if w[0] <= struos:
   struop=''
  if w[0]==0:
   defnow='global'
- if w[1][:7] == 'import ':
+ if switch and switch[-1][1] == -1 and w[1][-1]==':':
+  switch[-1][1]=w[0]
+  w1=w[1][:-1]
+  w[1]=''
+  for w2 in w1.split(','):
+   w[1]+='case '+w2+':'
+ elif switch and switch[-1][1]==w[0] and w[1][:7]=='default'and w[1][-1]==':':
+  w[1]='break;'*casebr+w[1]
+  casebr=1
+ elif switch and switch[-1][1]==w[0] and w[1][-1]==':':
+  w1=w[1][:-1]
+  w[1]='break;'*casebr
+  for w2 in w1.split(','):
+   w[1]+='case '+w2+':'
+  casebr=1
+ elif w[1][:7]=='switch ' and w[1][-1]==':':
+  w[1]='switch('+w[1][7:-1]+')'
+  switch+=[[w[0],-1]]
+ elif w[1]=='unbreak;':
+  casebr=0
+  w[1]='{}'
+ elif w[1][:7] == 'import ':
   w[1]='#include <'+w[1][7:]+'>'
  elif w[1][:4] == 'for ' and w[1][-1] == ':':
   w[1]=w[1][4:-1].strip()
@@ -362,7 +387,7 @@ a.write(q)
 a.close()
 ##############################
 if len(argv)==2 and sh('gcc outcode.c') == 0:
- prrint('\x1b[93m[compiled] \x1b[0m')
+ #prrint('\x1b[93m[compiled] \x1b[0m')
  q=sh('./a.out')
  if q:
   prrint()
