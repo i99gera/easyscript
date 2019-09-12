@@ -277,12 +277,12 @@ for w in q:
     add=1
    if '`' in e:
     tmp1+='%'+e.split('`')[1].strip()
-    tmp2+=',&('*add+e.split('`')[0].strip()+')'*add
+    tmp2+=','+'&('*add+e.split('`')[0].strip()+')'*add
    else:
     tmptype=e.split('[')[0].strip().replace('*','')
     if tmptype in vars[defnow].keys():
      tmp1+='%'+io[vars[defnow][tmptype].replace('*','')]
-     tmp2+=',&('*add+e.strip()+')'*add
+     tmp2+=','+'&('*add+e.strip()+')'*add
     elif tmptype in vars['global'].keys():
      tmp1+='%'+io[vars['global'][tmptype].replace('*','')]
      tmp2+=',&('*add+e.strip()+')'*add
