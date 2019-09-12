@@ -391,4 +391,4 @@ if len(argv)==2 and sh('gcc outcode.c') == 0:
  q=sh('./a.out')
  if q:
   prrint()
- prrint('\x1b[93m[exit code: '+str(q)+']\x1b[0m')
+  prrint('\x1b[93m[exit code: '+str(q)+']\x1b[0m')
