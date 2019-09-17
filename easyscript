@@ -5,6 +5,7 @@ def prrint(*a,**s):
 #prrint('\x1b[93m[compiling \x1b[93;5m...\x1b]\x1b[0m',end='\r')
 from sys import argv
 from os import system as sh
+from os import popen as pp
 vars=dict()
 defnow='global'
 mod=[]
@@ -28,6 +29,15 @@ struop=''
 struos=0
 debug=dict()
 casebr=1
+###############################
+q=pp('gcc --version').read()
+q=q.split()[2]
+q=q.split('.')[0]
+q=int(q)
+if q<10:
+ for w in io.keys():
+  if 'L' in io[w]:
+   io[w]=io[w].replace('L','ll')
 ###############################
 def unp(q,ww=0):
  if q[-1]=='*':
