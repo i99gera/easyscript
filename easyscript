@@ -7,7 +7,6 @@ from sys import argv
 from os import system as sh
 from os import popen as pp
 vars=dict()
-defnow='global'
 mod=[]
 struct=[]
 maint=['str','int','float','char','double','bool','void']
@@ -174,15 +173,15 @@ q+=main
 ##############################
 linow=-1
 switch=[]
-defnow='global'
+defnow=[[-1,'global']]
 for w in q:
  linow+=1
  if switch and w[0] <= switch[-1][0]:
   switch=switch[:-1]
  if w[0] <= struos:
   struop=''
- if w[0]==0:
-  defnow='global'
+ while w[0] <= defnow[-1][0]:
+  defnow=defnow[:-1]
  if switch and switch[-1][1] == -1 and w[1][-1]==':':
   switch[-1][1]=w[0]
   w1=w[1][:-1]
@@ -290,14 +289,14 @@ for w in q:
     tmp2+=','+'&('*add+e.split('`')[0].strip()+')'*add
    else:
     tmptype=e.split('[')[0].strip().replace('*','')
-    if tmptype in vars[defnow].keys():
-     tmp1+='%'+io[vars[defnow][tmptype].replace('*','')]
+    if tmptype in vars[defnow[-1][1]].keys():
+     tmp1+='%'+io[vars[defnow[-1][1]][tmptype].replace('*','')]
      tmp2+=','+'&('*add+e.strip()+')'*add
     elif tmptype in vars['global'].keys():
      tmp1+='%'+io[vars['global'][tmptype].replace('*','')]
      tmp2+=',&('*add+e.strip()+')'*add
     else:
-     prrint('\x1b[31m[error line '+str(linow)+']\x1b[0m could not scan '+tmptype)
+     prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m could not scan '+tmptype+' at '+w[1])
      exit()
   w[1]='scanf("'+tmp1+'"'+tmp2+');'
  elif w[1][:5] == 'print' and w[1][6]!='f':
@@ -325,28 +324,31 @@ for w in q:
     tmp2+=','+e.split('`')[0].strip()
    else:
     tmptype=e.split('[')[0].strip().replace('*','')
-    if tmptype in vars[defnow].keys():
-     tmp1+=['%'+io[vars[defnow][tmptype].replace('*','')]]
+    if tmptype in vars[defnow[-1][1]].keys():
+     tmp1+=['%'+io[vars[defnow[-1][1]][tmptype].replace('*','')]]
      tmp2+=','+e.strip()
     elif tmptype in vars['global'].keys():
      tmp1+=['%'+io[vars['global'][tmptype].replace('*','')]]
      tmp2+=','+e.strip()
     else:
-     prrint('\x1b[31m[error line '+str(linow)+']\x1b[0m could not print '+tmptype)
+     prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m could not print '+tmptype+' at '+w[1])
      exit()
   w[1]='printf("'+sep.join(tmp1)+end+'"'+tmp2+');'
   if 'printlimit' in debug:
    w[1]+='debug_printlimit--;if (debug_printlimit == 0) {printf("\033[31m[debug_printlimit]\033[0m\\n");debug_printlimit=1/debug_printlimit;}'
  elif w[1][:4] == 'def ' and w[1][-1] == ':':
   w[1]=w[1][4:-1]
-  defnow=w[1].split('(')[0].split()[1]
-  vars[defnow]=dict()
+  if len(w[1].split('(')[0].split())<2:
+   print('\x1b[91m[error line '+str(linow)+']\x1b[0m unktown type of function: '+w[1])
+   exit()
+  defnow+=[[w[0],w[1].split('(')[0].split()[1]]]
+  vars[defnow[-1][1]]=dict()
   nw=init(w[1].split('(')[0],'global')
   nw=unp(nw[0])+' '+nw[1]+'('
   nwl=[]
   for e in w[1].split('(')[1].split(')')[0].split(','):
    if e != ' '*len(e):
-    tmp=init(e,defnow)
+    tmp=init(e,defnow[-1][1])
     nwl+=[unp(tmp[0])+' '+tmp[1]]
   w[1]=nw+','.join(nwl)+')'
  elif w[1][:7] == 'struct ' and w[1][-1]==':':
@@ -360,10 +362,10 @@ for w in q:
   nw=unp(tmptype)+' '
   for e in tmp.split(','):
    ee=e.split('=')[0]
-   init(tmptype+' '+ee,defnow+struop)
+   init(tmptype+' '+ee,defnow[-1][1]+struop)
    if '.'+tmptype in struct:
-    for ww in vars[defnow+'.'+tmptype].keys():
-     init(vars[defnow+'.'+tmptype][ww]+' '+ee+'.'+ww,defnow)
+    for ww in vars[defnow[-1][1]+'.'+tmptype].keys():
+     init(vars[defnow[-1][1]+'.'+tmptype][ww]+' '+ee+'.'+ww,defnow[-1][1])
    nw+=e+','
   if '.'+tmptype in struct:
    nw='struct '+nw
