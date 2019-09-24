@@ -128,6 +128,8 @@ for w in q:
   nq+=w
 q=nq
 ##############################
+q=q.replace(';','\n')
+##############################
 q=q.split('\n')
 q=[w for w in q if w != ' '*len(w)]
 q=[[0,w] for w in q]
@@ -211,8 +213,8 @@ for w in q:
   w[1]='#include <'+w[1][7:]+'>'
  elif w[1][:4] == 'for ' and w[1][-1] == ':':
   w[1]=w[1][4:-1].strip()
-  if ';' in w[1]:
-   w[1]='for('+w[1].replace('and','&&').replace('or','||').replace('not','!')+')'
+  if w[1].count(':')==2:
+   w[1]='for('+w[1].replace(':',';').replace('and','&&').replace('or','||').replace('not','!')+')'
   else:
    test=':'.join(w[1].split(':')[1:]).replace('and','&&').replace('or','||').replace('not','!')
    w[1]=w[1].split(':')[0]
