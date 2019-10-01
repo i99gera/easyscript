@@ -1,0 +1,50 @@
+#!/usr/bin/env /usr/bin/python3
+from sys import argv
+from os import system as sh
+from json import loads
+argv[0]='/'.join(argv[0].replace('\\','/').split('/')[:-1])
+com=''
+dot=0
+cvars=dict()
+dvars=dict()
+while 1:
+ if dot:
+  got=input('... ')
+ else:
+  got=input('>>> ')
+ if got and got[0]!=' ':
+  dot=0
+ if got and got[-1]==':':
+  dot=1
+ if got == '':
+  dot=0
+ com+=got+'\n'
+ if dot==0:
+  if com=='exit\n':
+   exit()
+  for w in cvars.keys():
+   com=dvars[w]+' '+w+'='+str(sum([2**e[0]*int(e[1]) for e in enumerate(list(cvars[w]))]))+'\n'+com
+  open('outcode','w').write(com)
+  sh('python3 '+argv[0]+'/easyscript outcode -vars')
+  vars=open('outvars').read()
+  dvars=loads(vars)
+  com+='''
+file *easyscript_outfile
+easyscript_outfile=fopen("outvars","w")
+int easyscript_outit, easyscript_outtmp'''
+  for w in dvars.keys():
+   com+='''
+for easyscript_outit<sizeof( '''+w+''' )*4:
+ easyscript_outtmp=!!((1<<easyscript_outit)&'''+w+''' )
+ fprint(easyscript_outfile,easyscript_outtmp,format=''='')
+fprint(easyscript_outfile)
+'''
+  open('outcode','w').write(com)
+  sh('python3 '+argv[0]+'/easyscript outcode')
+  vars=open('outvars').read()
+  vars=vars.split('\n')
+  cvars=dict()
+  vars=[w for w in vars if w]
+  for w in range(len(vars)):
+   cvars[list(dvars.keys())[w]]=vars[w]
+  com=''

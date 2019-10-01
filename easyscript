@@ -6,10 +6,11 @@ def prrint(*a,**s):
 from sys import argv
 from os import system as sh
 from os import popen as pp
+msym=65536
 vars=dict()
 mod=[]
 struct=[]
-maint=['str','int','float','char','double','bool','void']
+maint=['str','int','float','char','double','bool','void','file']
 unpac={'c':'','u':'unsigned','l':'long'}
 io={
  'int':'i',
@@ -45,12 +46,18 @@ if '-gcc' in argv:
    if 'L' in io[w]:
     io[w]=io[w].replace('L','ll')
 ###############################
+rvars=0
+if '-vars' in argv:
+ argv=[w for w in argv if w!='-vars']
+ rvars=1
+###############################
 unrun=1
 if '-unrun' in argv:
  argv=[w for w in argv if w != '-unrun']
  unrun=0
 ###############################
 def unp(q,ww=0):
+ global mod
  if q[-1]=='*':
   q=q[:-1]
   addr=1
@@ -73,9 +80,11 @@ def unp(q,ww=0):
    return ''.join(sorted(be))+en
   else:
    return q
+ if en == 'file':
+  en='FILE'
+  mod+=['stdio.h','stdlib.h']
  if en == 'str':
   en='char'
-  global mod
   mod+=['string.h']
  if ww:
   if be+en:
@@ -106,17 +115,17 @@ q=a.read()
 a.close()
 quo=0
 ###############################
-q=''.join([chr(ord(w)%50000) for w in q])
-q=q.replace('/*',chr(50001))
-q=q.replace('*/',chr(50002))
+q=''.join([chr(ord(w)%msym) for w in q])
+q=q.replace('/*',chr(msym+1))
+q=q.replace('*/',chr(msym+2))
 com=1
 nq=''
 for w in q:
- if w==chr(50001):
+ if w==chr(msym+1):
   com=0
  if com:
   nq+=w
- if w==chr(50002):
+ if w==chr(msym+2):
   com=1
 q=nq
 ###############################
@@ -131,7 +140,7 @@ for w in q:
   nq+=w
   continue
  if quo:
-  nq+=chr(50000+ord(w))
+  nq+=chr(msym+ord(w))
  else:
   nq+=w
 q=nq
@@ -218,7 +227,8 @@ for w in q:
   casebr=0
   w[1]='{}'
  elif w[1][:7] == 'import ':
-  w[1]='#include <'+w[1][7:]+'>'
+  mod+=[w[1][7:]]
+  w[1]='{}'
  elif w[1][:4] == 'for ' and w[1][-1] == ':':
   w[1]=w[1][4:-1].strip()
   if w[1].count(':')==2:
@@ -287,7 +297,7 @@ for w in q:
  elif w[1][:3] == 'if ' and w[1][-1] == ':':
   w[1]='if('+w[1][3:-1].replace('and','&&').replace('or','||').replace('not','!')+')'
  elif w[1][:4] == 'scan' and w[1][4] not in 'qazwsxedrfctgvyhbujnikmolpQAWSZEDXRFCTGVYHBUJNIKMOLP_':
-  mod+=['stdio.h']
+  mod+=['stdio.h','stdlib.h']
   tmp1=''
   tmp2=''
   w[1]='('.join(w[1].split('(')[1:])
@@ -314,7 +324,7 @@ for w in q:
      exit()
   w[1]='scanf("'+tmp1+'"'+tmp2+');'
  elif w[1][:5] == 'print' and w[1][5] not in 'qazwsxedrfctgvyhbujnikmolpQAWSZEDXRFCTGVYHBUJNIKMOLP_':
-  mod+=['stdio.h']
+  mod+=['stdio.h','stdlib.h']
   tmp1=[]
   tmp2=''
   sep=' '
@@ -350,6 +360,74 @@ for w in q:
   w[1]='printf("'+sep.join(tmp1)+end+'"'+tmp2+');'
   if 'printlimit' in debug:
    w[1]+='debug_printlimit--;if (debug_printlimit == 0) {printf("\033[31m[debug_printlimit]\033[0m\\n");debug_printlimit=1/debug_printlimit;}'
+ elif w[1][:5] == 'fscan' and w[1][5] not in 'qazwsxedrfctgvyhbujnikmolpQAWSZEDXRFCTGVYHBUJNIKMOLP_':
+  mod+=['stdio.h','stdlib.h']
+  tmp1=''
+  tmp2=''
+  w[1]='('.join(w[1].split('(')[1:])
+  w[1]=')'.join(w[1].split(')')[:-1])
+  file=w[1].split(',')[0]
+  w[1]=','.join(w[1].split(',')[1:])
+  for e in w[1].split(','):
+   if e[0] == '`':
+    add=0
+    e=e[1:]
+   else:
+    add=1
+   if '`' in e:
+    tmp1+='%'+e.split('`')[1].strip()
+    tmp2+=','+'&('*add+e.split('`')[0].strip()+')'*add
+   else:
+    tmptype=e.split('[')[0].strip().replace('*','')
+    if tmptype in vars[defnow[-1][1]].keys():
+     tmp1+='%'+io[vars[defnow[-1][1]][tmptype].replace('*','')]
+     tmp2+=','+'&('*add+e.strip()+')'*add
+    elif tmptype in vars['global'].keys():
+     tmp1+='%'+io[vars['global'][tmptype].replace('*','')]
+     tmp2+=',&('*add+e.strip()+')'*add
+    else:
+     prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m could not scan '+tmptype+' at '+w[1])
+     exit()
+  w[1]='fscanf('+file+',"'+tmp1+'"'+tmp2+');'
+ elif w[1][:6] == 'fprint' and w[1][6] not in 'qazwsxedrfctgvyhbujnikmolpQAWSZEDXRFCTGVYHBUJNIKMOLP_':
+  mod+=['stdio.h','stdlib.h']
+  tmp1=[]
+  tmp2=''
+  sep=' '
+  end='\\n'
+  w[1]='('.join(w[1].split('(')[1:])
+  w[1]=')'.join(w[1].split(')')[:-1])
+  file=w[1].split(',')[0]
+  w[1]=','.join(w[1].split(',')[1:])
+  for e in w[1].split(','):
+   e=e.strip()
+   if e=='':
+    pass
+   elif len(e.split('='))==3 and e.split('=')[0].strip()=='format':
+    format,sep,end=e.split('=')
+    sep=sep.strip()[1:-1]
+    end=end.strip()[1:-1]
+   elif e[0] == '"' and e[-1] == '"':
+    tmp1+=[e[1:-1]]
+   elif e[0] == "'" and e[-1] == "'":
+    tmp1+=[e[1:-1]]
+   elif '`' in e:
+    tmp1+=['%'+e.split('`')[1].strip()]
+    tmp2+=','+e.split('`')[0].strip()
+   else:
+    tmptype=e.split('[')[0].strip().replace('*','')
+    if tmptype in vars[defnow[-1][1]].keys():
+     tmp1+=['%'+io[vars[defnow[-1][1]][tmptype].replace('*','')]]
+     tmp2+=','+e.strip()
+    elif tmptype in vars['global'].keys():
+     tmp1+=['%'+io[vars['global'][tmptype].replace('*','')]]
+     tmp2+=','+e.strip()
+    else:
+     prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m could not print '+tmptype+' at '+w[1])
+     exit()
+  w[1]='fprintf('+file+',"'+sep.join(tmp1)+end+'"'+tmp2+');'
+  if 'printlimit' in debug:
+   w[1]+='debug_printlimit--;if (debug_printlimit < 0) {printf("\033[31m[debug_printlimit]\033[0m\\n");return 0;}'
  elif w[1][:4] == 'def ' and w[1][-1] == ':':
   w[1]=w[1][4:-1]
   if len(w[1].split('(')[0].split())<2:
@@ -402,7 +480,7 @@ for w in range(len(q)-1):
 q[-1]=''
 ##############################
 q='\n'.join(q)
-q=''.join([chr(ord(w)%50000) for w in q])
+q=''.join([chr(ord(w)%msym) for w in q])
 ##############################
 mod=list(set(mod))
 for w in mod:
@@ -412,9 +490,18 @@ a=open('outcode.c','w')
 a.write(q)
 a.close()
 ##############################
-if unrun and sh('gcc outcode.c') == 0:
+if unrun and rvars==0 and sh('gcc outcode.c') == 0:
  #prrint('\x1b[93m[compiled] \x1b[0m')
  q=sh('./a.out')
  if q:
   prrint()
   prrint('\x1b[93m[exit code: '+str(q)+']\x1b[0m')
+##############################
+if rvars:
+ vars=[e+'":"'+vars['main'][e] for e in vars['main'].keys()]
+ vars='",\n"'.join(vars)
+ if vars:
+  vars='{"'+vars+'"}'
+ else:
+  vars='{}'
+ open('outvars','w').write(vars)
