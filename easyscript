@@ -309,7 +309,7 @@ for w in q:
     tmptype=vars[ww[1]][tmpvar]
   tmpcount=vat.split('[')[1].split(']')[0]
   tmpouttype=unp(tmptype)
-  w[1]=tmpvar+'=('+tmpouttype+'*)((int*)realloc(('+tmpouttype+'*)((int*)('+tmpvar+')-1),sizeof('+tmpouttype+')*('+tmpcount+')+4)+1);(*((int*)('+tmpvar+')-1))++;'
+  w[1]=tmpvar+'=('+tmpouttype+'*)realloc('+tmpvar+',sizeof('+tmpouttype+')*('+tmpcount+'));len_'+tmpvar+'='+tmpcount+';'
  elif w[1][:4] == 'new ':
   w[1]=w[1][:-1]
   tmptype=w[1].split()[1]
@@ -318,7 +318,8 @@ for w in q:
   tmpvar=vat.split('[')[0]
   tmpcount=vat.split('[')[1].split(']')[0]
   init(tmptype+' '+tmpvar,defnow[-1][1])
-  w[1]=tmpouttype +'*'+tmpvar+'=('+tmpouttype+'*)((int*)malloc(sizeof('+tmpouttype+')*('+tmpcount+')+4)+1);*((int*)('+tmpvar+')-1)='+tmpcount+';'
+  init('int len_'+tmpvar,defnow[-1][1])
+  w[1]=tmpouttype +'*'+tmpvar+'=('+tmpouttype+'*)malloc(sizeof('+tmpouttype+')*('+tmpcount+'));int len_'+tmpvar+'='+tmpcount+';'
  elif w[1][:3] == 'if ' and w[1][-1] == ':':
   w[1]='if('+w[1][3:-1].replace('and','&&').replace('or','||').replace('not','!')+')'
  elif w[1][:4] == 'scan' and w[1][4] not in 'qazwsxedrfctgvyhbujnikmolpQAWSZEDXRFCTGVYHBUJNIKMOLP_':
