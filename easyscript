@@ -308,16 +308,17 @@ for w in q:
    if tmpvar in vars[ww[1]].keys():
     tmptype=vars[ww[1]][tmpvar]
   tmpcount=vat.split('[')[1].split(']')[0]
-  w[1]=tmpvar+'=('+tmptype+'*)((int*)realloc(('+tmptype+'*)((int*)('+tmpvar+')-1),sizeof('+tmptype+')*('+tmpcount+'))+1);(*((int*)('+tmpvar+')-1))++;'
+  tmpouttype=unp(tmptype)
+  w[1]=tmpvar+'=('+tmpouttype+'*)((int*)realloc(('+tmpouttype+'*)((int*)('+tmpvar+')-1),sizeof('+tmpouttype+')*('+tmpcount+')+4)+1);(*((int*)('+tmpvar+')-1))++;'
  elif w[1][:4] == 'new ':
   w[1]=w[1][:-1]
   tmptype=w[1].split()[1]
-  tmptype=unp(tmptype)
+  tmpouttype=unp(tmptype)
   vat=' '.join(w[1].split()[2:])
   tmpvar=vat.split('[')[0]
   tmpcount=vat.split('[')[1].split(']')[0]
   init(tmptype+' '+tmpvar,defnow[-1][1])
-  w[1]=tmptype +'*'+tmpvar+'=('+tmptype+'*)((int*)malloc(sizeof('+tmptype+')*('+tmpcount+'))+1);*((int*)('+tmpvar+')-1)='+tmpcount+';'
+  w[1]=tmpouttype +'*'+tmpvar+'=('+tmpouttype+'*)((int*)malloc(sizeof('+tmpouttype+')*('+tmpcount+')+4)+1);*((int*)('+tmpvar+')-1)='+tmpcount+';'
  elif w[1][:3] == 'if ' and w[1][-1] == ':':
   w[1]='if('+w[1][3:-1].replace('and','&&').replace('or','||').replace('not','!')+')'
  elif w[1][:4] == 'scan' and w[1][4] not in 'qazwsxedrfctgvyhbujnikmolpQAWSZEDXRFCTGVYHBUJNIKMOLP_':
@@ -337,8 +338,12 @@ for w in q:
     tmp2+=','+'&('*add+e.split('`')[0].strip()+')'*add
    else:
     tmptype=e.split('[')[0].strip().replace('*','')
-    if tmptype in vars[defnow[-1][1]].keys():
-     tmp1+='%'+io[vars[defnow[-1][1]][tmptype].replace('*','')]
+    deffo=''
+    for ww in defnow:
+     if tmptype in vars[ww[1]].keys():
+      deffo=ww[1]
+    if deffo:
+     tmp1+='%'+io[vars[deffo][tmptype].replace('*','')]
      tmp2+=','+'&('*add+e.strip()+')'*add
     elif tmptype in vars['global'].keys():
      tmp1+='%'+io[vars['global'][tmptype].replace('*','')]
@@ -372,11 +377,12 @@ for w in q:
     tmp2+=','+e.split('`')[0].strip()
    else:
     tmptype=e.split('[')[0].strip().replace('*','')
-    if tmptype in vars[defnow[-1][1]].keys():
-     tmp1+=['%'+io[vars[defnow[-1][1]][tmptype].replace('*','')]]
-     tmp2+=','+e.strip()
-    elif tmptype in vars['global'].keys():
-     tmp1+=['%'+io[vars['global'][tmptype].replace('*','')]]
+    deffo=''
+    for ww in defnow:
+     if tmptype in vars[ww[1]].keys():
+      deffo=ww[1]
+    if deffo:
+     tmp1+=['%'+io[vars[deffo][tmptype].replace('*','')]]
      tmp2+=','+e.strip()
     else:
      prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m could not print '+tmptype+' at '+w[1])
@@ -403,12 +409,13 @@ for w in q:
     tmp2+=','+'&('*add+e.split('`')[0].strip()+')'*add
    else:
     tmptype=e.split('[')[0].strip().replace('*','')
-    if tmptype in vars[defnow[-1][1]].keys():
-     tmp1+='%'+io[vars[defnow[-1][1]][tmptype].replace('*','')]
+    deffo=''
+    for ww in defnow:
+     if tmptype in vars[ww[1]].keys():
+      deffo=ww[1]
+    if deffo:
+     tmp1+='%'+io[vars[deffo][tmptype].replace('*','')]
      tmp2+=','+'&('*add+e.strip()+')'*add
-    elif tmptype in vars['global'].keys():
-     tmp1+='%'+io[vars['global'][tmptype].replace('*','')]
-     tmp2+=',&('*add+e.strip()+')'*add
     else:
      prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m could not scan '+tmptype+' at '+w[1])
      exit()
@@ -440,11 +447,12 @@ for w in q:
     tmp2+=','+e.split('`')[0].strip()
    else:
     tmptype=e.split('[')[0].strip().replace('*','')
-    if tmptype in vars[defnow[-1][1]].keys():
-     tmp1+=['%'+io[vars[defnow[-1][1]][tmptype].replace('*','')]]
-     tmp2+=','+e.strip()
-    elif tmptype in vars['global'].keys():
-     tmp1+=['%'+io[vars['global'][tmptype].replace('*','')]]
+    deffo=''
+    for ww in defnow:
+     if tmptype in vars[ww[1]].keys():
+      deffo=ww[1]
+    if deffo:
+     tmp1+=['%'+io[vars[deffo][tmptype].replace('*','')]]
      tmp2+=','+e.strip()
     else:
      prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m could not print '+tmptype+' at '+w[1])
