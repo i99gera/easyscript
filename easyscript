@@ -513,4 +513,4 @@ if rvars:
   vars='{"'+vars+'"}'
  else:
   vars='{}'
- open('outvars','w').write(vars)
+ open('outvars.out','w').write(vars)

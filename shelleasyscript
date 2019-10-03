@@ -24,13 +24,13 @@ while 1:
    exit()
   for w in cvars.keys():
    com=dvars[w]+' '+w+'='+str(sum([2**e[0]*int(e[1]) for e in enumerate(list(cvars[w]))]))+'\n'+com
-  open('outcode','w').write(com)
-  sh('python3 '+argv[0]+'/easyscript outcode -vars')
-  vars=open('outvars').read()
+  open('outcode.out','w').write(com)
+  sh('python3 '+argv[0]+'/easyscript outcode.out -vars')
+  vars=open('outvars.out').read()
   dvars=loads(vars)
   com+='''
 file *easyscript_outfile
-easyscript_outfile=fopen("outvars","w")
+easyscript_outfile=fopen("outvars.out","w")
 int easyscript_outit, easyscript_outtmp'''
   for w in dvars.keys():
    com+='''
@@ -39,9 +39,9 @@ for easyscript_outit<sizeof( '''+w+''' )*4:
  fprint(easyscript_outfile,easyscript_outtmp,format=''='')
 fprint(easyscript_outfile)
 '''
-  open('outcode','w').write(com)
-  sh('python3 '+argv[0]+'/easyscript outcode')
-  vars=open('outvars').read()
+  open('outcode.out','w').write(com)
+  sh('python3 '+argv[0]+'/easyscript outcode.out')
+  vars=open('outvars.out').read()
   vars=vars.split('\n')
   cvars=dict()
   vars=[w for w in vars if w]
