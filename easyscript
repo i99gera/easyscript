@@ -304,11 +304,11 @@ for w in q:
 #  tmptype=w[1].split()[1]
 #  tmptype=unp(tmptype)
   vat=w[1]
-  tmpvar=vat.split('[')[0]
+  tmpvar='['.join(vat.split('[')[:-1])
   for ww in defnow:
    if tmpvar in vars[ww[1]].keys():
     tmptype=vars[ww[1]][tmpvar]
-  tmpcount=vat.split('[')[1].split(']')[0]
+  tmpcount=vat.split('[')[-1].split(']')[0]
   tmpouttype=unp(tmptype)
   w[1]=tmpvar+'=('+tmpouttype+'*)realloc('+tmpvar+',sizeof('+tmpouttype+')*('+tmpcount+'));len_'+tmpvar+'='+tmpcount+';'
  elif w[1][:4] == 'new ':
