@@ -486,7 +486,7 @@ class MyServer(BaseHTTPRequestHandler):
   if '?' in path:
    self.send_header("Content-type", "text/html; charset=utf-8")
    self.end_headers()
-   self.wfile.write(bytes('''
+   self.wfile.write(bytes(~
    <html>
    <head>
    <meta http-equiv="refresh" content="1;URL=.">
@@ -499,11 +499,11 @@ class MyServer(BaseHTTPRequestHandler):
     wi {background: #00ff00}
     </style>
    <div id="neko">
-    <img src="'''+img+'''" width="100%"><br>
-    <img src="'''+img+'''" width="100%"><br>
-    <img src="'''+img+'''" width="100%"></div>
+    <img src="~+img+~" width="100%"><br>
+    <img src="~+img+~" width="100%"><br>
+    <img src="~+img+~" width="100%"></div>
    </body>
-   </html>''', "utf-8"))
+   </html>~, "utf-8"))
 
   elif os.path.isdir(path):
    if img == '/nekopara.jpg':
@@ -513,10 +513,10 @@ class MyServer(BaseHTTPRequestHandler):
    a.close()
    self.send_header("Content-type", "text/html; charset=utf-8")
    self.end_headers()
-   self.wfile.write(bytes('''
+   self.wfile.write(bytes(~
    <html>
    <head>
-   <title>'''+path+'''</title>
+   <title>~+path+~</title>
    </head>
    <style type=text/css>
     #neko {position: fixed; top:0; botom:0; left:0; right:0}
@@ -525,9 +525,9 @@ class MyServer(BaseHTTPRequestHandler):
     </style>
    <body>
    <div id="neko">
-    <img src="'''+img+'''" width="100%"><br>
-    <img src="'''+img+'''" width="100%"><br>
-    <img src="'''+img+'''" width="100%"></div>
+    <img src="~+img+~" width="100%"><br>
+    <img src="~+img+~" width="100%"><br>
+    <img src="~+img+~" width="100%"></div>
 
    <div id="main">
     <h1>
@@ -538,7 +538,7 @@ class MyServer(BaseHTTPRequestHandler):
     <wi>===</wi>
 
    <wi><form method="post">
-   <textarea name="c">'''+clip+'''</textarea><br>
+   <textarea name="c">~+clip+~</textarea><br>
    <input type="submit" value="save"></form></wi>
    <wi>===</wi>
 
@@ -547,16 +547,16 @@ class MyServer(BaseHTTPRequestHandler):
    </button></form>
    <wi>===</wi>
 
-   ''','utf-8'))
+   ~,'utf-8'))
 
    for w in os.listdir(path):
-    self.wfile.write(bytes('''
-    <form><button formaction="'''+w+'''/">
-    <h1>'''+w+'''
-    <img src="/favicon.ico" height="25">'''*int(os.path.isdir(path+w))+'''
-    </h1></button></form>''','utf-8'))
+    self.wfile.write(bytes(~
+    <form><button formaction="~+w+~/">
+    <h1>~+w+~
+    <img src="/favicon.ico" height="25">~*int(os.path.isdir(path+w))+~
+    </h1></button></form>~,'utf-8'))
 
-   self.wfile.write(bytes('''</div></body></html>''', "utf-8"))
+   self.wfile.write(bytes(~</div></body></html>~, "utf-8"))
 
   elif os.path.isfile(path):
    self.send_header("Content-type", "file/file")
@@ -567,8 +567,8 @@ class MyServer(BaseHTTPRequestHandler):
   elif os.path.isfile(path[:-1]) and path[-1] == '/':
    self.send_header("Content-type", "text/html; charset=utf-8")
    self.end_headers()
-   self.wfile.write(bytes('''
-   <html><head><title>'''+path+'''</title>
+   self.wfile.write(bytes(~
+   <html><head><title>~+path+~</title>
    </head>
    <body>
    <style type=text/css>
@@ -577,19 +577,19 @@ class MyServer(BaseHTTPRequestHandler):
     wi {background: #00ff00}
     </style>
    <div id="neko">
-    <img src="'''+img+'''" width="100%"><br>
-    <img src="'''+img+'''" width="100%"><br>
-    <img src="'''+img+'''" width="100%"></div>
+    <img src="~+img+~" width="100%"><br>
+    <img src="~+img+~" width="100%"><br>
+    <img src="~+img+~" width="100%"></div>
    <div id="main">
    <h1>
    <form><button formaction="../">
    ..<img src="/favicon.ico" height="25">
    </button></form>
-   <wi>'''+path[1:-1]+'''</wi><br>
+   <wi>~+path[1:-1]+~</wi><br>
    </h1>
-   <a href="'''+path[1:-1].replace('..',arhvstin)+'''"><img src='/download.png' width=100%></a><br>
+   <a href="~+path[1:-1].replace('..',arhvstin)+~"><img src='/download.png' width=100%></a><br>
    </div></body></html>
-   ''', "utf-8"))
+   ~, "utf-8"))
   else:
    self.send_header("Content-type", "text/html; charset=utf-8")
    self.end_headers()
@@ -895,7 +895,7 @@ new int a[100]
 from urllib.request import urlopen as u
 q=u('http://kpml.ru/pages/raspisanie/izmeneniya-v-raspisanii').read().decode()
 print(q)
-'''
+~
 q=open('site').read()
 q=q.split('\n')
 q=[[len(w),w] for w in q]
@@ -932,7 +932,7 @@ for w in q:
 q=[(w[:1]+w[1]+w[2:])[::-1] for w in q if w[1] and w[2]]
 
 #q='\n'.join(q)
-'''
+~
 import json
 import httplib
 

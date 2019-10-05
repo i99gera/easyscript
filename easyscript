@@ -6,6 +6,7 @@ def prrint(*a,**s):
 from sys import argv
 from os import system as sh
 from os import popen as pp
+from random import randint
 msym=65536
 vars=dict()
 mod=[]
@@ -523,6 +524,7 @@ for w in range(len(q)-1):
 q[-1]=''
 ##############################
 q=('\n'*unhack).join(q)
+##############################
 q=''.join([chr(ord(w)%msym) for w in q])
 ##############################
 mod=list(set(mod))
