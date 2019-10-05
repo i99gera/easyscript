@@ -9,6 +9,7 @@ from os import popen as pp
 msym=65536
 vars=dict()
 mod=[]
+quo=0
 struct=[]
 maint=['str','int','float','char','double','bool','void','file']
 unpac={'c':'','u':'unsigned','l':'long'}
@@ -30,6 +31,11 @@ struos=0
 debug=dict()
 casebr=1
 argv =argv[1:]
+###############################
+unhack=1
+if '-unhack' in argv:
+ unhack=0
+ argv=[w for w in argv if w != '-unhack']
 ###############################
 if '-gcc' in argv:
  argv=[w for w in argv if w not in '-gcc']
@@ -110,10 +116,12 @@ def init(q,fun):
  vars[fun][name]=unp(type,2)
  return [type,name]
 ###############################
+if argv[0][:2]=='\\-':
+  argv[0]=argv[0][1:]
+###############################
 a=open(argv[0])
 q=a.read()
 a.close()
-quo=0
 ###############################
 q=''.join([chr(ord(w)%msym) for w in q])
 q=q.replace('/*',chr(msym+1))
@@ -504,17 +512,17 @@ for w in range(len(q)-1):
  if q[w][1][:7]=='struct ':
   struop=q[w][0]
  if q[w][0] == q[w+1][0]:
-  q[w]=' '*q[w][0]+q[w][1]
+  q[w]=' '*unhack*q[w][0]+q[w][1]
  elif q[w][0] > q[w+1][0]:
-  q[w]=' '*q[w][0]+q[w][1]+'}'*(q[w][0]-q[w+1][0])
+  q[w]=' '*unhack*q[w][0]+q[w][1]+'}'*(q[w][0]-q[w+1][0])
  elif q[w][0] < q[w+1][0]:
-  q[w]=' '*q[w][0]+q[w][1]+'{'*(q[w+1][0]-q[w][0])
+  q[w]=' '*unhack*q[w][0]+q[w][1]+'{'*(q[w+1][0]-q[w][0])
  if q[w+1][0]<=struop:
   q[w]+=';'
   struop=-1
 q[-1]=''
 ##############################
-q='\n'.join(q)
+q=('\n'*unhack).join(q)
 q=''.join([chr(ord(w)%msym) for w in q])
 ##############################
 mod=list(set(mod))
