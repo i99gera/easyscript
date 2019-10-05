@@ -320,6 +320,19 @@ for w in q:
   tmpcount=vat.split('[')[-1].split(']')[0]
   tmpouttype=unp(tmptype)
   w[1]=tmpvar+'=('+tmpouttype+'*)realloc('+tmpvar+',sizeof('+tmpouttype+')*('+tmpcount+'));len_'+tmpvar+'='+tmpcount+';'
+ elif w[1][:4] == 'add ':
+  mod+=['stdio.h','stdlib.h']
+  w[1]=w[1][4:-1]
+#  tmptype=w[1].split()[1]
+#  tmptype=unp(tmptype)
+  vat=w[1]
+  tmpvar='['.join(vat.split('[')[:-1])
+  for ww in defnow:
+   if tmpvar in vars[ww[1]].keys():
+    tmptype=vars[ww[1]][tmpvar]
+  tmpcount=vat.split('[')[-1].split(']')[0]
+  tmpouttype=unp(tmptype)
+  w[1]=tmpvar+'=('+tmpouttype+'*)realloc('+tmpvar+',sizeof('+tmpouttype+')*(len_'+tmpvar+'+1));len_'+tmpvar+'++;'+tmpvar+'[len_'+tmpvar+'-1]='+tmpcount+';'
  elif w[1][:4] == 'new ':
   mod+=['stdio.h','stdlib.h']
   w[1]=w[1][:-1]
@@ -539,7 +552,10 @@ a.close()
 ##############################
 if unrun and rvars==0 and sh('gcc outcode.c') == 0:
  #prrint('\x1b[93m[compiled] \x1b[0m')
- q=sh('./a.out')
+ try:
+  q=sh('./a.out')
+ except KeyboardInterrupt:
+  q=2
  if q:
   prrint()
   prrint('\x1b[93m[exit code: '+str(q)+']\x1b[0m')
