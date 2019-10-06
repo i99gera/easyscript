@@ -310,8 +310,6 @@ for w in q:
  elif w[1][:7] == 'resize ':
   mod+=['stdio.h','stdlib.h']
   w[1]=w[1][7:-1]
-#  tmptype=w[1].split()[1]
-#  tmptype=unp(tmptype)
   vat=w[1]
   tmpvar='['.join(vat.split('[')[:-1])
   for ww in defnow:
@@ -323,8 +321,6 @@ for w in q:
  elif w[1][:4] == 'add ':
   mod+=['stdio.h','stdlib.h']
   w[1]=w[1][4:-1]
-#  tmptype=w[1].split()[1]
-#  tmptype=unp(tmptype)
   vat=w[1]
   tmpvar='['.join(vat.split('[')[:-1])
   for ww in defnow:
