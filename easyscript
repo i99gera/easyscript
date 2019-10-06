@@ -333,7 +333,18 @@ for w in q:
   tmpcount=vat.split('[')[-1].split(']')[0]
   tmpouttype=unp(tmptype)
   w[1]=tmpvar+'=('+tmpouttype+'*)realloc('+tmpvar+',sizeof('+tmpouttype+')*(len_'+tmpvar+'+1));len_'+tmpvar+'++;'+tmpvar+'[len_'+tmpvar+'-1]='+tmpcount+';'
- elif w[1][:4] == 'new ':
+ elif w[1][:5] == 'cnew ':
+  mod+=['stdio.h','stdlib.h']
+  w[1]=w[1][:-1]
+  tmptype=w[1].split()[1]
+  tmpouttype=unp(tmptype)
+  vat=' '.join(w[1].split()[2:])
+  tmpvar=vat.split('[')[0]
+  tmpcount=vat.split('[')[1].split(']')[0]
+  init(tmptype+' '+tmpvar,defnow[-1][1])
+  init('int len_'+tmpvar,defnow[-1][1])
+  w[1]=tmpouttype +'*'+tmpvar+'=('+tmpouttype+'*)calloc(('+tmpcount+'),sizeof('+tmpouttype+'));int len_'+tmpvar+'='+tmpcount+';'
+ elif w[1][:5] == 'mnew ':
   mod+=['stdio.h','stdlib.h']
   w[1]=w[1][:-1]
   tmptype=w[1].split()[1]
