@@ -253,10 +253,10 @@ for w in q:
   switch+=[[w[0],-1]]
  elif w[1]=='unbreak;':
   casebr=0
-  w[1]='{}'
+  w[1]=''
  elif w[1][:7] == 'import ':
   mod+=[w[1][7:]]
-  w[1]='{}'
+  w[1]=''
  elif [e for e in w[1] if e!=' '][:3] == list('sh('):
   mod+=['stdlib.h']
   w[1]='system'+w[1][2:]
@@ -330,7 +330,7 @@ for w in q:
  elif w[1][:4] == 'for ' and w[1][-1] != ':':
   w[1]='for('+w[1][4:-1].replace('and','&&').replace('or','||').replace('not','!')+')'
  elif w[1] == 'pass;':
-  w[1]='{}'
+  w[1]=''
  elif w[1][:5] == 'elif ' and w[1][-1] == ':':
   w[1]='elif('+w[1][5:-1].replace('and','&&').replace('or','||').replace('not','!')+')'
  elif [e for e in w[1] if e!=' '] == list('else:'):
@@ -384,6 +384,8 @@ for w in q:
   init(tmptype+' '+tmpvar)
   init('int len_'+tmpvar.strip())
   w[1]=tmpouttype +'*'+tmpvar+'=('+tmpouttype+'*)calloc(('+tmpcount+'),sizeof('+tmpouttype+'));int len_'+tmpvar.strip()+'='+tmpcount+';'
+ elif [e for e in w[1]][:5] == list('sort('):
+  mod+='algorithm functional array iostream iterator'.split()
  elif w[1][:4] == 'new ':
   w[1]=w[1][4:-1]
   tmptype=w[1].split()[0]
