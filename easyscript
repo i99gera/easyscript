@@ -120,7 +120,10 @@ def unp(q,ww=0):
   return toex+en+'*'*addr
  return q+'*'*addr
 ###############################
-def init(q,fun):
+def init(q,fun=None):
+ global defnow
+ if fun==None:
+  fun=defnow[-1][1]
  q=q.strip()
  q=' '.join(q.split())
  type=q.split()[0]
@@ -378,8 +381,8 @@ for w in q:
   vat=' '.join(w[1].split()[2:])
   tmpvar=vat.split('[')[0]
   tmpcount=vat.split('[')[1].split(']')[0]
-  init(tmptype+' '+tmpvar,defnow[-1][1])
-  init('int len_'+tmpvar.strip(),defnow[-1][1])
+  init(tmptype+' '+tmpvar)
+  init('int len_'+tmpvar.strip())
   w[1]=tmpouttype +'*'+tmpvar+'=('+tmpouttype+'*)calloc(('+tmpcount+'),sizeof('+tmpouttype+'));int len_'+tmpvar.strip()+'='+tmpcount+';'
  elif w[1][:4] == 'new ':
   w[1]=w[1][4:-1]
@@ -394,8 +397,8 @@ for w in q:
   vat=' '.join(w[1].split()[2:])
   tmpvar=vat.split('[')[0]
   tmpcount=vat.split('[')[1].split(']')[0]
-  init(tmptype+' '+tmpvar,defnow[-1][1])
-  init('int len_'+tmpvar.strip(),defnow[-1][1])
+  init(tmptype+' '+tmpvar)
+  init('int len_'+tmpvar.strip())
   w[1]=tmpouttype +'*'+tmpvar+'=('+tmpouttype+'*)malloc(sizeof('+tmpouttype+')*('+tmpcount+'));int len_'+tmpvar.strip()+'='+tmpcount+';'
  elif w[1][:3] == 'if ' and w[1][-1] == ':':
   w[1]='if('+w[1][3:-1].replace('and','&&').replace('or','||').replace('not','!')+')'
@@ -535,7 +538,7 @@ for w in q:
   nwl=[]
   for e in w[1].split('(')[1].split(')')[0].split(','):
    if e != ' '*len(e):
-    tmp=init(e,defnow[-1][1])
+    tmp=init(e)
     nwl+=[unp(tmp[0])+' '+tmp[1]]
   w[1]=nw+','.join(nwl)+')'
  elif w[1][:7] == 'struct ' and w[1][-1]==':':
@@ -552,7 +555,7 @@ for w in q:
    init(tmptype+' '+ee,defnow[-1][1]+struop)
    if '.'+tmptype in struct:
     for ww in vars[defnow[-1][1]+'.'+tmptype].keys():
-     init(vars[defnow[-1][1]+'.'+tmptype][ww]+' '+ee+'.'+ww,defnow[-1][1])
+     init(vars[defnow[-1][1]+'.'+tmptype][ww]+' '+ee+'.'+ww)
    nw+=e+','
   if '.'+tmptype in struct:
    nw='struct '+nw
