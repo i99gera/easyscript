@@ -423,9 +423,6 @@ for w in q:
     if deffo:
      tmp1+='%'+io[vars[deffo][tmptype].replace('*','')]
      tmp2+=','+'&('*add+e.strip()+')'*add
-    elif tmptype in vars['global'].keys():
-     tmp1+='%'+io[vars['global'][tmptype].replace('*','')]
-     tmp2+=',&('*add+e.strip()+')'*add
     else:
      prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m could not scan '+tmptype+' at '+w[1])
      exit()
