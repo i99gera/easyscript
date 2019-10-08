@@ -587,12 +587,13 @@ for w in mod:
   mods+='#include <'+w+'>\n'
 q=mods+q
 ##############################
-a=open('outcode.c','w')
+a=open('outcode.cpp','w')
 a.write(q)
 a.close()
 ##############################
-if unrun and rvars==0 and sh('gcc outcode.c') == 0:
+if unrun and rvars==0 and sh('gcc outcode.cpp') == 0:
  #prrint('\x1b[93m[compiled] \x1b[0m')
+ from time import time
  try:
   q=sh('./a.out')
  except KeyboardInterrupt:
