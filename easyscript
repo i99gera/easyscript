@@ -63,6 +63,21 @@ if '-unrun' in argv:
  argv=[w for w in argv if w != '-unrun']
  unrun=0
 ###############################
+def type(q):
+ e=q.replace('*','')
+ e=e.split('[')[0]
+ e=e.split('(')[0]
+ q=e
+ global vars
+ global defnow
+ e=''
+ for w in defnow:
+  if '*'+q in vars[w[1]].keys():
+   e=vars[w[1]]['*'+q]
+  if q in vars[w[1]].keys():
+   e=vars[w[1]][q]
+ return e
+###############################
 def unp(q,ww=0):
  global mod
  if q[-1]=='*':
