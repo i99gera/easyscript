@@ -11,6 +11,7 @@ msym=65536
 vars=dict()
 mod=[]
 uns=[]
+fif=[]
 quo=0
 struct=[]
 maint=['str','int','float','char','double','bool','void','file']
@@ -157,6 +158,18 @@ for w in q:
  if w==chr(msym+2):
   com=1
 q=nq
+##############################
+q=q.replace("'''",chr(msym+1))#'''
+quo=0
+nq=''
+for w in q:
+ if w == chr(msym+1):
+  quo=1-quo
+ if quo and w=='\n':
+  nq+='\\n'
+ else:
+  nq+=w
+q=nq.replace(chr(msym+1),'"')
 ###############################
 nq=''
 for w in q:
@@ -176,7 +189,11 @@ q=nq
 ##############################
 q=q.replace(';','\n')
 ##############################
+if 'scani()' in q.replace(' ',''):
+ fif+=['scani']
+##############################
 q=q.split('\n')
+##############################
 q=[w for w in q if w != ' '*len(w)]
 q=[[0,w] for w in q]
 for w in q:
@@ -255,6 +272,17 @@ for w in q:
  elif w[1]=='unbreak;':
   casebr=0
   w[1]=''
+ elif w[1][:5]=='each ' and w[1][-1]==':':
+  tmpar=w[1][5:-1].strip()
+  tmpit='each_'+tmpar
+  w[1]=''
+  if itype('index_'+tmpit)=='':
+   init('int index_'+tmpit)
+   w[1]+='int index_'+tmpit+';\n'+' '*w[0]
+  if itype(tmpit)!=itype(tmpar):
+   init(itype(tmpar)+' '+tmpit)
+   w[1]+=itype(tmpar)+' '+tmpit+';\n'+' '*w[0]
+  w[1]+='for(index_'+tmpit+'=0,'+tmpit+'='+tmpar+'[index_'+tmpit+'];index_'+tmpit+'<len_'+tmpar+';'+tmpar+'[index_'+tmpit+']='+tmpit+',index_'+tmpit+'++,'+tmpit+'='+tmpar+'[index_'+tmpit+'<len_'+tmpar+'-1?index_'+tmpit+':len_'+tmpar+'-1])'
  elif w[1][:7] == 'import ':
   mod+=[w[1][7:]]
   w[1]=''
@@ -271,7 +299,10 @@ for w in q:
    w[1]=''
    if itype('index_'+tmpit)=='':
     init('int index_'+tmpit)
-    w[1]+='int index_'+tmpit+';'
+    w[1]+='int index_'+tmpit+';\n'+' '*w[0]
+   if itype(tmpit)!=itype(tmpar):
+    init(itype(tmpar)+' '+tmpit)
+    w[1]+=itype(tmpar)+' '+tmpit+';\n'+' '*w[0]
    w[1]+='for(index_'+tmpit+'=0,'+tmpit+'='+tmpar+'[index_'+tmpit+'];index_'+tmpit+'<len_'+tmpar+';'+tmpar+'[index_'+tmpit+']='+tmpit+',index_'+tmpit+'++,'+tmpit+'='+tmpar+'[index_'+tmpit+'<len_'+tmpar+'-1?index_'+tmpit+':len_'+tmpar+'-1])'
   else:
    test=':'.join(w[1].split(':')[1:]).replace('and','&&').replace('or','||').replace('not','!')
@@ -355,7 +386,7 @@ for w in q:
   tmptype=itype(tmpvar)
   tmpcount=vat.split('[')[-1].split(']')[0]
   tmpouttype=unp(tmptype)
-  w[1]=tmpvar+'=('+tmpouttype+'*)malloc(sizeof('+tmpouttype+')*('+tmpcount+'));len_'+tmpvar.strip()+'='+tmpcount+';'
+  w[1]='len_'+tmpvar.strip()+'='+tmpcount+';'+tmpvar+'=('+tmpouttype+'*)malloc(sizeof('+tmpouttype+')*(len_'+tmpvar.strip()+'));'
  elif w[1][:4] == 'cal ':
   mod+=['stdlib.h']
   w[1]=w[1][4:-1]
@@ -364,7 +395,7 @@ for w in q:
   tmptype=itype(tmpvar)
   tmpcount=vat.split('[')[-1].split(']')[0]
   tmpouttype=unp(tmptype)
-  w[1]=tmpvar+'=('+tmpouttype+'*)calloc(('+tmpcount+'),sizeof('+tmpouttype+'));len_'+tmpvar.strip()+'='+tmpcount+';'
+  w[1]='len_'+tmpvar.strip()+'='+tmpcount+';'+tmpvar+'=('+tmpouttype+'*)calloc((len_'+tmpvar.strip()+'),sizeof('+tmpouttype+'));'
  elif w[1][:4] == 'add ':
   mod+=['stdlib.h']
   w[1]=w[1][4:-1]
@@ -384,7 +415,7 @@ for w in q:
   tmpcount=vat.split('[')[1].split(']')[0]
   init(tmptype+' '+tmpvar)
   init('int len_'+tmpvar.strip())
-  w[1]=tmpouttype +'*'+tmpvar+'=('+tmpouttype+'*)calloc(('+tmpcount+'),sizeof('+tmpouttype+'));int len_'+tmpvar.strip()+'='+tmpcount+';'
+  w[1]='int len_'+tmpvar.strip()+'='+tmpcount+';'+tmpouttype +'*'+tmpvar+'=('+tmpouttype+'*)calloc((len_'+tmpvar.strip()+'),sizeof('+tmpouttype+'));'
  elif [e for e in w[1]][:5] == list('sort('):
   mod+='algorithm functional array iostream iterator'.split()
   uns+=['std']
@@ -403,7 +434,7 @@ for w in q:
   tmpcount=vat.split('[')[1].split(']')[0]
   init(tmptype+' '+tmpvar)
   init('int len_'+tmpvar.strip())
-  w[1]=tmpouttype +'*'+tmpvar+'=('+tmpouttype+'*)malloc(sizeof('+tmpouttype+')*('+tmpcount+'));int len_'+tmpvar.strip()+'='+tmpcount+';'
+  w[1]='int len_'+tmpvar.strip()+'='+tmpcount+';'+tmpouttype +'*'+tmpvar+'=('+tmpouttype+'*)malloc(sizeof('+tmpouttype+')*(len_'+tmpvar.strip()+'));'
  elif w[1][:3] == 'if ' and w[1][-1] == ':':
   w[1]='if('+w[1][3:-1].replace('and','&&').replace('or','||').replace('not','!')+')'
  elif [e for e in w[1] if e!=' '][:5] == list('scan('):
@@ -588,9 +619,12 @@ q=''.join([chr(ord(w)%msym) for w in q])
 mod=list(set(mod))
 mods=''
 for w in mod:
-  mods+='#include <'+w+'>\n'
+ mods+='#include <'+w+'>\n'
 for w in uns:
-  mods+='using namespace '+w+';\n'
+ mods+='using namespace '+w+';\n'
+for w in fif:
+ if w=='scani':
+  mods+='int scani(){int q;scanf("%i",&q);return q;}\n'
 q=mods+q
 ##############################
 a=open('outcode.cpp','w')
