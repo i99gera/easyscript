@@ -281,7 +281,7 @@ for w in q:
    w[1]+='int index_'+tmpit+';\n'+' '*w[0]
   if itype(tmpit)!=itype(tmpar):
    init(itype(tmpar)+' '+tmpit)
-   w[1]+=itype(tmpar)+' '+tmpit+';\n'+' '*w[0]
+   w[1]+=unp(itype(tmpar))+' '+tmpit+';\n'+' '*w[0]
   w[1]+='for(index_'+tmpit+'=0,'+tmpit+'='+tmpar+'[index_'+tmpit+'];index_'+tmpit+'<len_'+tmpar+';'+tmpar+'[index_'+tmpit+']='+tmpit+',index_'+tmpit+'++,'+tmpit+'='+tmpar+'[index_'+tmpit+'<len_'+tmpar+'-1?index_'+tmpit+':len_'+tmpar+'-1])'
  elif w[1][:7] == 'import ':
   mod+=[w[1][7:]]
