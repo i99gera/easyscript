@@ -12,6 +12,7 @@ vars=dict()
 mod=[]
 uns=[]
 fif=[]
+asym='qazwsxedcrfvtgbyhnujmikolp_QAZWSXEDCRFVTGBYHNUJMIKOLP0192837465'
 quo=0
 struct=[]
 maint=['str','int','float','char','double','bool','void','file']
@@ -69,7 +70,15 @@ def itype(q):
  e=q.replace('*','')
  e=e.split('[')[0]
  e=e.split('(')[0]
- q=e
+ q=e.strip()
+ if q.isdigit():
+  q=int(q)
+  if -2**31<=q<2**31:
+   return 'int'
+  elif -2**63<=q<2**63:
+   return 'lint'
+  else:
+   return 'llint'
  global vars
  global defnow
  e=''
@@ -78,9 +87,12 @@ def itype(q):
    e=vars[w[1]]['*'+q]
   if q in vars[w[1]].keys():
    e=vars[w[1]][q]
- return e.replace('*','')
+ e=e.replace('*','')
+ return e
 ###############################
 def unp(q,ww=0):
+ if q == '':
+  return ''
  global mod
  if q[-1]=='*':
   q=q[:-1]
@@ -119,8 +131,8 @@ def unp(q,ww=0):
   toex=''
   for w in unpac.keys():
    toex+=(unpac[w]+' ')*be.count(w)
-  return toex+en+'*'*addr
- return q+'*'*addr
+  return toex+en
+ return q
 ###############################
 def init(q,fun=None):
  global defnow
@@ -172,12 +184,13 @@ for w in q:
 q=nq.replace(chr(msym+1),'"')
 ###############################
 nq=''
+bs=0
 for w in q:
- if w == '"' and quo in [1,0]:
+ if w == '"' and quo in [1,0] and bs==0:
   quo=1-quo
   nq+=w
   continue
- if w == "'" and quo in [2,0]:
+ if w == "'" and quo in [2,0] and bs==0:
   quo=2-quo
   nq+=w
   continue
@@ -185,6 +198,9 @@ for w in q:
   nq+=chr(msym+ord(w))
  else:
   nq+=w
+ bs=0
+ if w=='\\':
+  bs=1
 q=nq
 ##############################
 q=q.replace(';','\n')
@@ -258,11 +274,11 @@ for w in q:
   for w2 in w1.split(','):
    w[1]+='case '+w2+':'
  elif switch and switch[-1][1]==w[0] and w[1][:7]=='default'and w[1][-1]==':':
-  w[1]='break;'*casebr+w[1]
+  w[1]=('break;\n'+' '*w[0])*casebr+w[1]
   casebr=1
  elif switch and switch[-1][1]==w[0] and w[1][-1]==':':
   w1=w[1][:-1]
-  w[1]='break;'*casebr
+  w[1]=('break;\n'+' '*w[0])*casebr
   for w2 in w1.split(','):
    w[1]+='case '+w2+':'
   casebr=1
@@ -307,6 +323,24 @@ for w in q:
   else:
    test=':'.join(w[1].split(':')[1:]).replace('and','&&').replace('or','||').replace('not','!')
    w[1]=w[1].split(':')[0]
+   if '<' in w[1]:
+    if '=' not in w[1]:
+     w[1]='0='+w[1]
+    beg=w[1].split('=')[0]
+    it=w[1].split('=')[1].split('<')[0]
+    end=w[1].split('<')[1]
+    st='++'
+    te='<'
+   if '>' in w[1]:
+    if '=' not in w[1]:
+     w[1]='0='+w[1]
+    beg=w[1].split('=')[0]
+    it=w[1].split('=')[1].split('>')[0]
+    end=w[1].split('>')[1]
+    st='--'
+    te='>'
+   w[1]='for('+it+'='+beg+';'+it+te+end+';'+it+st+')'
+   '''
    ext='for('
    if '<' in w[1]:
     if '=' in w[1]:
@@ -354,7 +388,12 @@ for w in q:
      ext+=';'
      ext+=w[1].split('>')[0]
      ext+='--)'
-   w[1]=ext
+    '''
+
+   if itype(it)!=itype(end) and itype(end):
+    init(itype(end)+' '+it)
+    w[1]=unp(itype(end))+' '+it+';\n'+' '*w[0]+w[1]
+   #w[1]=ext
  elif w[1][:6] == 'while ' and w[1][-1] == ':':
   w[1]='while('+w[1][6:-1].replace('and','&&').replace('or','||').replace('not','!')+')'
  elif w[1][:6] == 'while ' and w[1][-1] == ';':
@@ -444,12 +483,15 @@ for w in q:
   w[1]='('.join(w[1].split('(')[1:])
   w[1]=')'.join(w[1].split(')')[:-1])
   for e in w[1].split(','):
+   e=e.strip()
    if e[0] == '`':
     add=0
     e=e[1:]
    else:
     add=1
-   if '`' in e:
+   if e[0]==e[-1] and e[0] in '\'\"':
+    tmp1+=e[1:-1]
+   elif '`' in e:
     tmp1+='%'+e.split('`')[1].strip()
     tmp2+=','+'&('*add+e.split('`')[0].strip()+')'*add
    else:
@@ -506,12 +548,15 @@ for w in q:
   file=w[1].split(',')[0]
   w[1]=','.join(w[1].split(',')[1:])
   for e in w[1].split(','):
+   e=e.strip()
    if e[0] == '`':
     add=0
     e=e[1:]
    else:
     add=1
-   if '`' in e:
+   if e[0]==e[-1] and e[0] in '\"\'':
+    tmp1+=e[1:-1]
+   elif '`' in e:
     tmp1+='%'+e.split('`')[1].strip()
     tmp2+=','+'&('*add+e.split('`')[0].strip()+')'*add
    else:
@@ -524,7 +569,7 @@ for w in q:
      prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m could not scan '+tmptype+' at '+w[1])
      exit()
   w[1]='fscanf('+file+',"'+tmp1+'"'+tmp2+');'
- elif [e for e in w[1] if e!=' '][:7] == list('fprint'):
+ elif [e for e in w[1] if e!=' '][:7] == list('fprint('):
   mod+=['stdio.h']
   tmp1=[]
   tmp2=''
@@ -595,6 +640,8 @@ for w in q:
   if '.'+tmptype in struct:
    nw='struct '+nw
   w[1]=nw[:-1]+';'
+ elif '=' in w[1] and set(w[1].split('=')[0]) | set(asym) == set(asym):
+  w[1]=unp(itype(w[1].split('=')[1]))+' '+w[1]
 ##############################
 q+=[[0,'',0]]
 struop=-1
