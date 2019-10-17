@@ -623,7 +623,8 @@ for w in q:
  elif w[1][:4] == 'def ' and w[1][-1] == ':':
   w[1]=w[1][4:-1]
   if len(w[1].split('(')[0].split())<2:
-   prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m unktown type of function: '+w[1])
+   w[1]='int '+w[1]
+   #prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m unktown type of function: '+w[1])
    exit()
   defnow+=[[w[0],w[1].split('(')[0].split()[1]]]
   vars[defnow[-1][1]]=dict()
