@@ -37,7 +37,7 @@ casebr=1
 argv =argv[1:]
 ###############################
 unhack=1
-if '-unhack' in argv:
+if '-crypt' in argv:
  unhack=0
  argv=[w for w in argv if w != '-unhack']
 ###############################
@@ -62,7 +62,7 @@ if '-vars' in argv:
  rvars=1
 ###############################
 unrun=1
-if '-unrun' in argv:
+if '-compile' in argv:
  argv=[w for w in argv if w != '-unrun']
  unrun=0
 ###############################
@@ -290,15 +290,16 @@ for w in q:
   w[1]=''
  elif w[1][:5]=='each ' and w[1][-1]==':':
   tmpar=w[1][5:-1].strip()
-  tmpit='each'
+  tmpit='each_'+tmpar
   w[1]=''
   if itype('index_'+tmpit)=='':
    init('int index_'+tmpit)
    w[1]+='int index_'+tmpit+';\n'+' '*w[0]
-  init(itype(tmpar)+' '+tmpit)
-  #w[1]+=unp(itype(tmpar))+' '+tmpit+';\n'+' '*w[0]
-  w[1]+='for(index_'+tmpit+'=0;index_'+tmpit+'<len_'+tmpar+';'+tmpar+'[index_'+tmpit+']='+tmpit+',index_'+tmpit+'++)'
-  w[2]+=unp(itype(tmpar))+' '+tmpit+'='+tmpar+'[index_'+tmpit+']'
+  if itype('tmpit')=='':
+   init(itype(tmpar)+' '+tmpit)
+   w[1]+=unp(itype(tmpar))+' '+tmpit+';\n'+' '*w[0]
+  w[1]+='for(index_'+tmpit+'=0,'+tmpit+'='+tmpar+'[index_'+tmpit+'];index_'+tmpit+'<len_'+tmpar+';'+tmpar+'[index_'+tmpit+']='+tmpit+',index_'+tmpit+'++)'
+  #w[2]+=unp(itype(tmpar))+' '+tmpit+'='+tmpar+'[index_'+tmpit+']'
  elif w[1][:7] == 'import ':
   mod+=[w[1][7:]]
   w[1]=''
