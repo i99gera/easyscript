@@ -16,7 +16,7 @@ asym='qazwsxedcrfvtgbyhnujmikolp_QAZWSXEDCRFVTGBYHNUJMIKOLP0192837465'
 quo=0
 struct=[]
 maint=['str','int','float','char','double','bool','void','file']
-unpac={'c':'','u':'unsigned','l':'long'}
+unpac={'c':'const','u':'unsigned','l':'long'}
 io={
  'int':'i',
  'lint':'li',
@@ -71,7 +71,7 @@ def itype(q):
  e=e.split('[')[0]
  e=e.split('(')[0]
  q=e.strip()
- if q.isdigit():
+ if q.isdigit() or q[0]=='-' and q[1:].isdigit():
   q=int(q)
   if -2**31<=q<2**31:
    return 'int'
@@ -156,20 +156,6 @@ if argv[0][:2]=='\\-':
 a=open(argv[0])
 q=a.read()
 a.close()
-###############################
-q=''.join([chr(ord(w)%msym) for w in q])
-q=q.replace('/*',chr(msym+1))
-q=q.replace('*/',chr(msym+2))
-com=1
-nq=''
-for w in q:
- if w==chr(msym+1):
-  com=0
- if com:
-  nq+=w
- if w==chr(msym+2):
-  com=1
-q=nq
 ##############################
 q=q.replace("'''",chr(msym+1))#'''
 quo=0
@@ -202,6 +188,20 @@ for w in q:
  if w=='\\':
   bs=1
 q=nq
+###############################
+q=''.join([chr(ord(w)%msym) for w in q])
+q=q.replace('/*',chr(msym+1))
+q=q.replace('*/',chr(msym+2))
+com=1
+nq=''
+for w in q:
+ if w==chr(msym+1):
+  com=0
+ if com:
+  nq+=w
+ if w==chr(msym+2):
+  com=1
+q=nq
 ##############################
 q=q.replace(';','\n')
 ##############################
@@ -211,7 +211,7 @@ if 'scani()' in q.replace(' ',''):
 q=q.split('\n')
 ##############################
 q=[w for w in q if w != ' '*len(w)]
-q=[[0,w] for w in q]
+q=[[0,w,''] for w in q]
 for w in q:
  while w[1][0] == ' ':
   w[1]=w[1][1:]
@@ -251,7 +251,7 @@ for w in q:
  if inmain==2:
   w[0]-=1
 q=[w for w in q if w[1] != '']
-q+=[[0,'def int main():']]
+q+=[[0,'def int main():','']]
 for w in main:
  w[0]+=1
 q+=main
@@ -290,15 +290,15 @@ for w in q:
   w[1]=''
  elif w[1][:5]=='each ' and w[1][-1]==':':
   tmpar=w[1][5:-1].strip()
-  tmpit='each_'+tmpar
+  tmpit='each'
   w[1]=''
   if itype('index_'+tmpit)=='':
    init('int index_'+tmpit)
    w[1]+='int index_'+tmpit+';\n'+' '*w[0]
-  if itype(tmpit)!=itype(tmpar):
-   init(itype(tmpar)+' '+tmpit)
-   w[1]+=unp(itype(tmpar))+' '+tmpit+';\n'+' '*w[0]
-  w[1]+='for(index_'+tmpit+'=0,'+tmpit+'='+tmpar+'[index_'+tmpit+'];index_'+tmpit+'<len_'+tmpar+';'+tmpar+'[index_'+tmpit+']='+tmpit+',index_'+tmpit+'++,'+tmpit+'='+tmpar+'[index_'+tmpit+'<len_'+tmpar+'-1?index_'+tmpit+':len_'+tmpar+'-1])'
+  init(itype(tmpar)+' '+tmpit)
+  #w[1]+=unp(itype(tmpar))+' '+tmpit+';\n'+' '*w[0]
+  w[1]+='for(index_'+tmpit+'=0;index_'+tmpit+'<len_'+tmpar+';'+tmpar+'[index_'+tmpit+']='+tmpit+',index_'+tmpit+'++)'
+  w[2]+=unp(itype(tmpar))+' '+tmpit+'='+tmpar+'[index_'+tmpit+']'
  elif w[1][:7] == 'import ':
   mod+=[w[1][7:]]
   w[1]=''
@@ -480,9 +480,16 @@ for w in q:
   mod+=['stdio.h']
   tmp1=''
   tmp2=''
+  tmp3=''
   w[1]='('.join(w[1].split('(')[1:])
   w[1]=')'.join(w[1].split(')')[:-1])
   for e in w[1].split(','):
+   if len(e.split())>1 and unp(e.split()[0],1):
+    tmp3+=unp(e.split()[0])+' '+' '.join(e.split()[1:])+';\n'+' '*w[0]
+    init(e.split()[0]+' '+' '.join(e.split()[1:]))
+    tmp1+='%'+io[e.split()[0]]
+    tmp2+=','+'&('+' '.join(e.split()[1:])+')'
+    continue
    e=e.strip()
    if e[0] == '`':
     add=0
@@ -503,7 +510,7 @@ for w in q:
     else:
      prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m could not scan '+tmptype+' at '+w[1])
      exit()
-  w[1]='scanf("'+tmp1+'"'+tmp2+');'
+  w[1]=tmp3+'scanf("'+tmp1+'"'+tmp2+');'
  elif [e for e in w[1] if e!=' '][:6] == list('print('):
   mod+=['stdio.h']
   tmp1=[]
@@ -543,11 +550,18 @@ for w in q:
   mod+=['stdio.h']
   tmp1=''
   tmp2=''
+  tmp3=''
   w[1]='('.join(w[1].split('(')[1:])
   w[1]=')'.join(w[1].split(')')[:-1])
   file=w[1].split(',')[0]
   w[1]=','.join(w[1].split(',')[1:])
   for e in w[1].split(','):
+   if len(e.split())>1 and unp(e.split()[0],1):
+    tmp3+=unp(e.split()[0])+' '+' '.join(e.split()[1:])+';\n'+' '*w[0]
+    init(e.split()[0]+' '+' '.join(e.split()[1:]))
+    tmp1+='%'+io[e.split()[0]]
+    tmp2+=','+'&('+' '.join(e.split()[1:])+')'
+    continue
    e=e.strip()
    if e[0] == '`':
     add=0
@@ -568,7 +582,7 @@ for w in q:
     else:
      prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m could not scan '+tmptype+' at '+w[1])
      exit()
-  w[1]='fscanf('+file+',"'+tmp1+'"'+tmp2+');'
+  w[1]=tmp3+'fscanf('+file+',"'+tmp1+'"'+tmp2+');'
  elif [e for e in w[1] if e!=' '][:7] == list('fprint('):
   mod+=['stdio.h']
   tmp1=[]
@@ -640,20 +654,21 @@ for w in q:
   if '.'+tmptype in struct:
    nw='struct '+nw
   w[1]=nw[:-1]+';'
- elif '=' in w[1] and set(w[1].split('=')[0]) | set(asym) == set(asym):
-  w[1]=unp(itype(w[1].split('=')[1]))+' '+w[1]
+ elif '=' in w[1] and set(w[1].split('=')[0].strip()) | set(asym) == set(asym) and itype(w[1].split('=')[0])=='':
+  init(itype(w[1][:-1].split('=')[1])+' '+w[1].split('=')[0])
+  w[1]=unp(itype(w[1][:-1].split('=')[1]))+' '+w[1]
 ##############################
-q+=[[0,'',0]]
+q+=[[0,'','']]
 struop=-1
 for w in range(len(q)-1):
  if q[w][1][:7]=='struct ':
   struop=q[w][0]
  if q[w][0] == q[w+1][0]:
-  q[w]=' '*unhack*q[w][0]+q[w][1]
+  q[w]=' '*unhack*q[w][0]+q[w][1]+('\n'+' '*unhack*q[w][0])*int(bool(len(q[w][2])))+q[w][2]
  elif q[w][0] > q[w+1][0]:
-  q[w]=' '*unhack*q[w][0]+q[w][1]+'}'*(q[w][0]-q[w+1][0])
+  q[w]=' '*unhack*q[w][0]+q[w][1]+'}'*(q[w][0]-q[w+1][0])+('\n'+' '*unhack*q[w][0])*int(bool(len(q[w][2])))+q[w][2]
  elif q[w][0] < q[w+1][0]:
-  q[w]=' '*unhack*q[w][0]+q[w][1]+'{'*(q[w+1][0]-q[w][0])
+  q[w]=' '*unhack*q[w][0]+q[w][1]+'{'*(q[w+1][0]-q[w][0])+('\n'+' '*unhack*q[w][0])*int(bool(len(q[w][2])))+q[w][2]
  if q[w+1][0]<=struop:
   q[w]+=';'
   struop=-1
