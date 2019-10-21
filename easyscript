@@ -35,6 +35,7 @@ struos=0
 debug=dict()
 casebr=1
 argv =argv[1:]
+listvars=[dict()]
 ###############################
 unhack=1
 if '-crypt' in argv:
@@ -260,6 +261,10 @@ linow=-1
 switch=[]
 defnow=[[-1,'global']]
 for w in q:
+ listvars=listvars[:w[0]+1]
+ while len(listvars)<w[0]+1:
+  listvars+=[dict()]
+ print(w[1],listvars)
  linow+=1
  if switch and w[0] <= switch[-1][0]:
   switch=switch[:-1]
