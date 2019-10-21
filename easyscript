@@ -6,6 +6,7 @@ def prrint(*a,**s):
 from sys import argv
 from os import system as sh
 from os import popen as pp
+from os.path import exists
 from random import randint
 msym=65536
 vars=dict()
@@ -172,12 +173,19 @@ def init(q,fun=None):
  vars[fun][name]=unp(type,2)
  return [type,name]
 ###############################
-if argv[0][:2]=='\\-':
-  argv[0]=argv[0][1:]
+if not (argv):
+ print('and what file should I compile?')
+ exit()
+###############################
+if not(exists(argv[0])):
+ prrint('\x1b[91m[error]\x1b[0m Could not find '+argv[0])
+ exit()
 ###############################
 a=open(argv[0])
 q=a.read()
 a.close()
+##############################
+q+='\npass\n'
 ##############################
 q=q.replace(';','\n')
 ##############################
@@ -657,7 +665,7 @@ for w in q:
   if len(w[1].split('(')[0].split())<2:
    w[1]='int '+w[1]
    #prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m unktown type of function: '+w[1])
-   exit()
+   #exit()
   defnow+=[[w[0],w[1].split('(')[0].split()[1]]]
   vars[defnow[-1][1]]=dict()
   nw=init(w[1].split('(')[0])
