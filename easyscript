@@ -12,9 +12,10 @@ vars=dict()
 mod=[]
 uns=[]
 fif=[]
+com=[]
 asym='qazwsxedcrfvtgbyhnujmikolp_QAZWSXEDCRFVTGBYHNUJMIKOLP0192837465'
 quo=0
-struct=[]
+struct=dict()
 maint=['str','int','float','char','double','bool','void','file']
 unpac={'c':'const','u':'unsigned','l':'long'}
 io={
@@ -72,6 +73,18 @@ def itype(q):
  e=e.split('[')[0]
  e=e.split('(')[0]
  q=e.strip()
+ if '.' in q:
+  q=q.split('.')
+  q=[w.strip() for w in q]
+  return struct[itype(q[0])][q[1]]
+ if q[-1]=='LL' and (q[:-2].isdigit() or q[0]=='-' and q[1:-2].isdigit()):
+  return 'llint'
+ if q[-1]=='L' and (q[:-1].isdigit() or q[0]=='-' and q[1:-1].isdigit()):
+  q=int(q[:-1])
+  if -2**63<=q<2**63:
+   return 'lint'
+  else:
+   return 'llint'
  if q.isdigit() or q[0]=='-' and q[1:].isdigit():
   q=int(q)
   if -2**31<=q<2**31:
@@ -80,15 +93,21 @@ def itype(q):
    return 'lint'
   else:
    return 'llint'
+ e=''
+ global listvars
+ for w in listvars:
+  if q in w:
+   e=w[q]
+ '''
  global vars
  global defnow
- e=''
  for w in defnow:
   if '*'+q in vars[w[1]].keys():
    e=vars[w[1]]['*'+q]
   if q in vars[w[1]].keys():
    e=vars[w[1]][q]
  e=e.replace('*','')
+'''
  return e
 ###############################
 def unp(q,ww=0):
@@ -100,7 +119,7 @@ def unp(q,ww=0):
   addr=1
  else:
   addr=0
- if '.'+q in struct:
+ if q in struct:
   return q
  be=''
  en=''
@@ -144,6 +163,8 @@ def init(q,fun=None):
  type=q.split()[0]
  q=' '.join(q.split()[1:]).strip()
  name=q.split('[')[0].split('(')[0].strip()
+ global listvars
+ listvars[-1][name]=type
  q=q[len(name):]
  global vars
  if fun not in vars.keys():
@@ -157,6 +178,14 @@ if argv[0][:2]=='\\-':
 a=open(argv[0])
 q=a.read()
 a.close()
+##############################
+q=q.replace(';','\n')
+##############################
+q=q.split('\n')
+for w in range(len(q)):
+ if '#' in q[w]:
+  q[w]=q[w].replace('//','/*')+'*/'
+q='\n'.join(q)
 ##############################
 q=q.replace("'''",chr(msym+1))#'''
 quo=0
@@ -203,8 +232,6 @@ for w in q:
  if w==chr(msym+2):
   com=1
 q=nq
-##############################
-q=q.replace(';','\n')
 ##############################
 if 'scani()' in q.replace(' ',''):
  fif+=['scani']
@@ -264,7 +291,6 @@ for w in q:
  listvars=listvars[:w[0]+1]
  while len(listvars)<w[0]+1:
   listvars+=[dict()]
- print(w[1],listvars)
  linow+=1
  if switch and w[0] <= switch[-1][0]:
   switch=switch[:-1]
@@ -634,7 +660,7 @@ for w in q:
    exit()
   defnow+=[[w[0],w[1].split('(')[0].split()[1]]]
   vars[defnow[-1][1]]=dict()
-  nw=init(w[1].split('(')[0],'global')
+  nw=init(w[1].split('(')[0])
   nw=unp(nw[0])+' '+nw[1]+'('
   nwl=[]
   for e in w[1].split('(')[1].split(')')[0].split(','):
@@ -643,8 +669,8 @@ for w in q:
     nwl+=[unp(tmp[0])+' '+tmp[1]]
   w[1]=nw+','.join(nwl)+')'
  elif w[1][:7] == 'struct ' and w[1][-1]==':':
-  struop='.'+w[1][7:-1].strip()
-  struct+=[struop]
+  struop=w[1][7:-1].strip()
+  struct[struop]=dict()
   w[1]=w[1][:-1]
   struos=w[0]
  elif unp(w[1].split(' ')[0],1):
@@ -653,12 +679,12 @@ for w in q:
   nw=unp(tmptype)+' '
   for e in tmp.split(','):
    ee=e.split('=')[0]
-   init(tmptype+' '+ee,defnow[-1][1]+struop)
-   if '.'+tmptype in struct:
-    for ww in vars[defnow[-1][1]+'.'+tmptype].keys():
-     init(vars[defnow[-1][1]+'.'+tmptype][ww]+' '+ee+'.'+ww)
+   if struop:
+    struct[struop][ee]=tmptype
+   else:
+    init(tmptype+' '+ee)
    nw+=e+','
-  if '.'+tmptype in struct:
+  if tmptype in struct:
    nw='struct '+nw
   w[1]=nw[:-1]+';'
  elif '=' in w[1] and set(w[1].split('=')[0].strip()) | set(asym) == set(asym) and itype(w[1].split('=')[0])=='':
@@ -668,7 +694,7 @@ for w in q:
 q+=[[0,'','']]
 struop=-1
 for w in range(len(q)-1):
- if q[w][1][:7]=='struct ':
+ if q[w][1][:7]=='struct ' and q[w][1][-1]!=';':
   struop=q[w][0]
  if q[w][0] == q[w+1][0]:
   q[w]=' '*unhack*q[w][0]+q[w][1]+('\n'+' '*unhack*q[w][0])*int(bool(len(q[w][2])))+q[w][2]
