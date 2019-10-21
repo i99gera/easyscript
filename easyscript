@@ -184,7 +184,7 @@ q=q.replace(';','\n')
 q=q.split('\n')
 for w in range(len(q)):
  if '#' in q[w]:
-  q[w]=q[w].replace('//','/*')+'*/'
+  q[w]=q[w].replace('#','/*')+'*/'
 q='\n'.join(q)
 ##############################
 q=q.replace("'''",chr(msym+1))#'''
