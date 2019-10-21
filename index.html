@@ -9,58 +9,12 @@ h1 {background: #ff8888}
 <pre>
     python3
 </pre>
-</h3><h2> How to use:</h2><h3>
-<h5>`python3 /path/to/easyscript file-with-your-code`<br></h5>
-<h1> How to code:</h1><h3><br>
-</h3><h2>first programm:</h2><h3><br>
-</h3><h5>print('hello world')</h5><h3>
-it will print 'hello world' string.<br>
-</h3><h2>about variables:</h2><h3>
-supported main types:
-</h3><h5>int, str, char, float, double</h5><h3>
-supported prefixes:
-</h3><h5>l: long, c: const, u: unsigned</h5><h3>
-types are created using prefix and main type, for example:
-</h3><h5>ullint q,w,e</h5><h3>
-will declare vars q,w,e of type long long unsigned int.<br>
-order of prefixes doesn't matrer.<br>
-</h3><h2>print and scan:</h2><h3><br>
-these functions are for input/output.<br>
-example:<br>
-</h3><h5>
-int q,w<br>
-scan(q,w)<br>
-q+=w<br>
-print(q)</h5><h3>
-this code will scan two numbers and print sum of them.<br>
-note: print and scan can work with variables and functions only.<br>
-You can't print(q+1).<br>
-</h3><h2>if</h2><h3>
-condition:<br>
-if condition is integer, it is understood as testing if condition in not 0<br>
-syntax example:<br>
-</h3><h5>
-int q
-scan(q)
-if q%3==0:
- print('divided by 3')
-elif q%3==1:
- print('divided by 3 with remainder 1')
-else:
- print('divided by 3 with remainder 2')
-</h5><h3>
-this code finds remainder of division by 3<br>
-another example:
-</h3><h5>
-int q
-scan(q)
-if q%7:
- print(q,' is not divided by 7')
-else:
- print(q,' is divided by 7')
-</h5><h3>
-this code tests if number is divided by 7<br>
-</h3><h2>while</h2><h3>
-example of code:
-
-</h3>
+</h3><h2> How to run code:</h2>
+<h5>python3 /path/to/easyscript file-with-your-code<br>
+<h2> If run failed you can compile to c++ code using:</h2>
+<h5>python3 /path/to/easyscript -compile file-with-your-code<br></h5>
+<h1> Learning by example:</h1><h3>
+calculating the sum of two numbers</h3><h5>
+scan(int q,int w) #scanning two integer numbers<br>
+q+=w #calculating sum of them<br>
+print(q) #printing the sum</h5><h3>
