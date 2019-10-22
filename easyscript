@@ -498,8 +498,6 @@ for w in q:
  elif [e for e in w[1]][:5] == list('sort('):
   mod+='algorithm functional array iostream iterator'.split()
   uns+=['std']
-  if len(w[1].split('(')[1].split(')')[0].split(','))==1:
-   w[1]=w[1].split(')')[0]+',len_'+w[1].split('(')[1].split(')')[0]+')'
  elif w[1][:4] == 'new ':
   w[1]=w[1][4:-1]
   tmptype=w[1].split()[0]
