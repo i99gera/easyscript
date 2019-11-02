@@ -78,15 +78,15 @@ def itype(q):
   q=q.split('.')
   q=[w.strip() for w in q]
   return struct[itype(q[0])][q[1]]
- if q[-1]=='LL' and (q[:-2].isdigit() or q[0]=='-' and q[1:-2].isdigit()):
+ if q[-2:]=='LL' and (q[:-2].isdigit() or q[0]=='-' and q[1:-2].isdigit()):
   return 'llint'
- if q[-1]=='L' and (q[:-1].isdigit() or q[0]=='-' and q[1:-1].isdigit()):
+ if q[-1:]=='L' and (q[:-1].isdigit() or q[0]=='-' and q[1:-1].isdigit()):
   q=int(q[:-1])
   if -2**63<=q<2**63:
    return 'lint'
   else:
    return 'llint'
- if q.isdigit() or q[0]=='-' and q[1:].isdigit():
+ if q.isdigit() or q[:1]=='-' and q[1:].isdigit():
   q=int(q)
   if -2**31<=q<2**31:
    return 'int'
@@ -363,23 +363,29 @@ for w in q:
   else:
    test=':'.join(w[1].split(':')[1:]).replace('and','&&').replace('or','||').replace('not','!')
    w[1]=w[1].split(':')[0]
-   if '<' in w[1]:
+   te=0
+   if '<' in w[1] or '>' in w[1]:
+    while w[1][te] not in '<>':
+     te+=1
+    te=w[1][te]
+   if te=='<':
     if '=' not in w[1]:
      w[1]='0='+w[1]
     beg=w[1].split('=')[0]
     it=w[1].split('=')[1].split('<')[0]
     end=w[1].split('<')[1]
     st='++'
-    te='<'
-   if '>' in w[1]:
+   if te=='>':
     if '=' not in w[1]:
      w[1]='0='+w[1]
     beg=w[1].split('=')[0]
     it=w[1].split('=')[1].split('>')[0]
     end=w[1].split('>')[1]
     st='--'
-    te='>'
-   w[1]='for('+it+'='+beg+';'+it+te+end+';'+it+st+')'
+   if test:
+    w[1]='for('+it+'='+beg+';'+test+';'+it+st+')'
+   else:
+    w[1]='for('+it+'='+beg+';'+it+te+end+';'+it+st+')'
    '''
    ext='for('
    if '<' in w[1]:
@@ -734,7 +740,7 @@ a=open('outcode.cpp','w')
 a.write(q)
 a.close()
 ##############################
-if unrun and rvars==0 and sh('gcc outcode.cpp') == 0:
+if unrun and rvars==0 and sh('g++ outcode.cpp') == 0:
  #prrint('\x1b[93m[compiled] \x1b[0m')
  from time import time
  try:
