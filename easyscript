@@ -65,8 +65,8 @@ if '-vars' in argv:
  rvars=1
 ###############################
 unrun=1
-if '-compile' in argv:
- argv=[w for w in argv if w != '-unrun']
+if '-c' in argv:
+ argv=[w for w in argv if w != '-c']
  unrun=0
 ###############################
 def itype(q):
@@ -187,15 +187,14 @@ a.close()
 ##############################
 q+='\npass\n'
 ##############################
-q=q.replace(';','\n')
-##############################
+'''
 q=q.split('\n')
 for w in range(len(q)):
  if '#' in q[w]:
   q[w]=q[w].replace('#','/*')+'*/'
 q='\n'.join(q)
 ##############################
-q=q.replace("'''",chr(msym+1))#'''
+q=q.replace("",chr(msym+1))#
 quo=0
 nq=''
 for w in q:
@@ -240,12 +239,67 @@ for w in q:
  if w==chr(msym+2):
   com=1
 q=nq
+'''
+###############################
+q=''.join([chr(ord(w)%msym) for w in q])
+nq=''
+ws=0
+while q:
+ if ws==0 and q[:3]=="'''":#'''
+  ws=1
+  nq+='"'
+  q=q[3:]
+ elif ws==1 and q[:3]=="'''":#'''
+  ws=0
+  nq+='"'
+  q=q[3:]
+ elif ws==0 and q[:1]=='"':
+  ws=2
+  nq+='"'
+  q=q[1:]
+ elif ws==2 and q[:1]=='"':
+  ws=0
+  nq+='"'
+  q=q[1:]
+ elif ws==0 and q[:1]=="'":
+  ws=3
+  nq+="'"
+  q=q[1:]
+ elif ws==3 and q[:1]=="'":
+  ws=0
+  nq+="'"
+  q=q[1:]
+ elif ws==0 and q[:2]=='/*':
+  ws=4
+  q=q[2:]
+ elif ws==4 and q[:2]=='*/':
+  ws=0
+  q=q[2:]
+ elif ws==0 and q[:1]=='#':
+  ws=5
+  q=q[1:]
+ elif ws==5 and q[:1]=='\n':
+  ws=0
+  q=q[1:]
+ elif ws==0:
+  nq+=q[0]
+  q=q[1:]
+ elif ws<4:
+  nq+=chr(msym+ord(q[0]))
+  q=q[1:]
+  if nq[-1]=='\n':
+   nq=nq[:-1]+'\\n'
+ else:
+  q=q[1:]
+q=nq
+###############################
+q=q.replace(';','\n')
 ##############################
 if 'scani()' in q.replace(' ',''):
  fif+=['scani']
-##############################
+###############################
 q=q.split('\n')
-##############################
+###############################
 q=[w for w in q if w != ' '*len(w)]
 q=[[0,w,''] for w in q]
 for w in q:
@@ -254,11 +308,11 @@ for w in q:
   w[0]+=1
  while w[1][-1] == ' ':
   w[1]=w[1][:-1]
-##############################
+###############################
 for w in q:
  if w[1][-1] not in ':;' and w[1].split(' ')[0] not in ['import']:
    w[1]+=';'
-##############################
+###############################
 deb=-1
 for w in q:
  if w[1][:5]=='debug' and w[1][-1]==':':
@@ -270,7 +324,7 @@ for w in q:
   wd=w[1].split('=')
   debug[wd[0]]=wd[1]
   w[1]='int debug_'+w[1]
-##############################
+###############################
 main=[]
 inmain=1
 for w in q:
@@ -291,7 +345,7 @@ q+=[[0,'def int main():','']]
 for w in main:
  w[0]+=1
 q+=main
-##############################
+###############################
 linow=-1
 switch=[]
 defnow=[[-1,'global']]
@@ -704,7 +758,7 @@ for w in q:
  elif '=' in w[1] and set(w[1].split('=')[0].strip()) | set(asym) == set(asym) and itype(w[1].split('=')[0])=='':
   init(itype(w[1][:-1].split('=')[1])+' '+w[1].split('=')[0])
   w[1]=unp(itype(w[1][:-1].split('=')[1]))+' '+w[1]
-##############################
+###############################
 q+=[[0,'','']]
 struop=-1
 for w in range(len(q)-1):
@@ -720,11 +774,11 @@ for w in range(len(q)-1):
   q[w]+=';'
   struop=-1
 q[-1]=''
-##############################
+###############################
 q=('\n'*unhack).join(q)
-##############################
+###############################
 q=''.join([chr(ord(w)%msym) for w in q])
-##############################
+###############################
 mod=list(set(mod))
 mods=''
 for w in mod:
@@ -735,11 +789,11 @@ for w in fif:
  if w=='scani':
   mods+='int scani(){int q;scanf("%i",&q);return q;}\n'
 q=mods+q
-##############################
+###############################
 a=open('outcode.cpp','w')
 a.write(q)
 a.close()
-##############################
+###############################
 if unrun and rvars==0 and sh('g++ outcode.cpp') == 0:
  #prrint('\x1b[93m[compiled] \x1b[0m')
  from time import time
@@ -750,7 +804,7 @@ if unrun and rvars==0 and sh('g++ outcode.cpp') == 0:
  if q:
   prrint()
   prrint('\x1b[93m[exit code: '+str(q)+']\x1b[0m')
-##############################
+###############################
 if rvars:
  vars=[e+'":"'+vars['main'][e] for e in vars['main'].keys()]
  vars='",\n"'.join(vars)
