@@ -406,6 +406,8 @@ for w in q:
   elif ' in ' in w[1]:
    tmpit=w[1].split(' in ')[0].strip()
    tmpar=w[1].split(' in ')[1].strip()
+   w[1]='for('+itype(tmpit)+' '+tmpit+':'+tmpar+')'
+   '''
    w[1]=''
    if itype('index_'+tmpit)=='':
     init('int index_'+tmpit)
@@ -414,6 +416,7 @@ for w in q:
     init(itype(tmpar)+' '+tmpit)
     w[1]+=itype(tmpar)+' '+tmpit+';\n'+' '*w[0]
    w[1]+='for(index_'+tmpit+'=0,'+tmpit+'='+tmpar+'[index_'+tmpit+'];index_'+tmpit+'<len_'+tmpar+';'+tmpar+'[index_'+tmpit+']='+tmpit+',index_'+tmpit+'++,'+tmpit+'='+tmpar+'[index_'+tmpit+'<len_'+tmpar+'-1?index_'+tmpit+':len_'+tmpar+'-1])'
+   '''
   else:
    test=':'.join(w[1].split(':')[1:]).replace('and','&&').replace('or','||').replace('not','!')
    w[1]=w[1].split(':')[0]
@@ -558,11 +561,23 @@ for w in q:
  elif [e for e in w[1]][:5] == list('sort('):
   mod+='algorithm functional array iostream iterator'.split()
   uns+=['std']
- elif w[1][:4] == 'new ':
-  w[1]=w[1][4:-1]
-  tmptype=w[1].split()[0]
-  tmpvar=' '.join(w[1].split()[1:])
-  w[1]=tmptype+'*'+tmpvar+';int len_'+tmpvar.strip()+';'
+ elif w[1][:4]=='new ':
+  w[1]=w[1][4:].strip()
+  tmptype=w[1].split(' ')[0]
+  w[1]=' '.join(w[1].split(' ')[1:])
+  init(tmptype+' '+w[1])
+  w[1]='vector <'+tmptype+'> '+w[1]
+  mod+=['vector']
+  uns+=['std']
+ elif w[1][:5]=='push ':
+  w[1]=w[1][5:-1][::-1]
+  tmpadd=w[1].split('[')[0].split(']')[1]
+  w[1]='['.join(w[1].split('[')[1:])
+  w[1]=w[1][::-1]
+  w[1]=w[1]+'.push_back('+tmpadd+');'
+ elif w[1][:5]=='name ':
+  uns+=[w[1][5:].strip()]
+  w[1]=''
  elif w[1][:5] == 'mnew ':
   mod+=['stdlib.h']
   w[1]=w[1][:-1]
@@ -739,7 +754,7 @@ for w in q:
  elif w[1][:7] == 'struct ' and w[1][-1]==':':
   struop=w[1][7:-1].strip()
   struct[struop]=dict()
-  w[1]=w[1][:-1]
+  w[1]='typedef '+w[1][:-1]
   struos=w[0]
  elif unp(w[1].split(' ')[0],1):
   tmp=' '.join(w[1][:-1].split(' ')[1:])
@@ -753,7 +768,7 @@ for w in q:
     init(tmptype+' '+ee)
    nw+=e+','
   if tmptype in struct:
-   nw='struct '+nw
+   nw=nw
   w[1]=nw[:-1]+';'
  elif '=' in w[1] and set(w[1].split('=')[0].strip()) | set(asym) == set(asym) and itype(w[1].split('=')[0])=='':
   init(itype(w[1][:-1].split('=')[1])+' '+w[1].split('=')[0])
@@ -762,7 +777,7 @@ for w in q:
 q+=[[0,'','']]
 struop=-1
 for w in range(len(q)-1):
- if q[w][1][:7]=='struct ' and q[w][1][-1]!=';':
+ if q[w][1][:15]=='typedef struct ' and q[w][1][-1]!=';':
   struop=q[w][0]
  if q[w][0] == q[w+1][0]:
   q[w]=' '*unhack*q[w][0]+q[w][1]+('\n'+' '*unhack*q[w][0])*int(bool(len(q[w][2])))+q[w][2]
@@ -781,14 +796,19 @@ q=''.join([chr(ord(w)%msym) for w in q])
 ###############################
 mod=list(set(mod))
 mods=''
-for w in mod:
- mods+='#include <'+w+'>\n'
+uns=list(set(uns))
 for w in uns:
  mods+='using namespace '+w+';\n'
+fif=list(set(fif))
 for w in fif:
  if w=='scani':
   mods+='int scani(){int q;scanf("%i",&q);return q;}\n'
-q=mods+q
+  mod+=['stdio.h']
+rmods=''
+mod=list(set(mod))
+for w in mod:
+ rmods+='#include <'+w+'>\n'
+q=rmods+mods+q
 ###############################
 a=open('outcode.cpp','w')
 a.write(q)
