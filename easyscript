@@ -8,6 +8,8 @@ from os import system as sh
 from os import popen as pp
 from os.path import exists
 from random import randint
+from binascii import hexlify
+from binascii import unhexlify
 msym=65536
 vars=dict()
 mod=[]
@@ -68,6 +70,11 @@ unrun=1
 if '-c' in argv:
  argv=[w for w in argv if w != '-c']
  unrun=0
+###############################
+restore=0
+if '-restore' in argv:
+ argv=[w for w in argv if w!= '-restore']
+ restore=1
 ###############################
 def itype(q):
  e=q.replace('*','')
@@ -184,6 +191,13 @@ if not(exists(argv[0])):
 a=open(argv[0])
 q=a.read()
 a.close()
+ort=q
+##############################
+if restore:
+ a=open('restore','w')
+ a.write(unhexlify(q.split('\n')[0][2:].encode()).decode())
+ a.close()
+ exit()
 ##############################
 q+='\npass\n'
 ##############################
@@ -570,11 +584,22 @@ for w in q:
   mod+=['vector']
   uns+=['std']
  elif w[1][:5]=='push ':
-  w[1]=w[1][5:-1][::-1]
-  tmpadd=w[1].split('[')[0].split(']')[1]
-  w[1]='['.join(w[1].split('[')[1:])
-  w[1]=w[1][::-1]
-  w[1]=w[1]+'.push_back('+tmpadd+');'
+  w[1]=w[1][5:-2]
+  te=1
+  op=1
+  prin=20
+  while op:
+   if w[1][-te]=='[':
+    op-=1
+   if w[1][-te]==']':
+    op+=1
+   te+=1
+   prin-=1
+   if prin==0:
+    exit()
+  tmpedd=w[1][:-te+1]
+  tmpadd=w[1][-te+2:]
+  w[1]=tmpedd+'.push_back('+tmpadd+');'
  elif w[1][:5]=='name ':
   uns+=[w[1][5:].strip()]
   w[1]=''
@@ -810,8 +835,9 @@ for w in mod:
  rmods+='#include <'+w+'>\n'
 q=rmods+mods+q
 ###############################
+ort=hexlify(ort.encode()).decode()
 a=open('outcode.cpp','w')
-a.write(q)
+a.write('//'+ort+'\n'+q)
 a.close()
 ###############################
 if unrun and rvars==0 and sh('g++ outcode.cpp') == 0:
