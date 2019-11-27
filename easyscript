@@ -77,10 +77,17 @@ if '-restore' in argv:
  restore=1
 ###############################
 def itype(q):
- e=q.replace('*','')
+ q=q.strip()
+ if q[0]=='*':
+  q=q[1:]
+ e=q
  e=e.split('[')[0]
  e=e.split('(')[0]
- q=e.strip()
+ e=e.strip()
+ e=e.split('+')[0]
+ e=e.split('-')[0]
+ e=e.split('*')[0]
+ q=e.split('/')[0]
  if '.' in q:
   q=q.split('.')
   q=[w.strip() for w in q]
