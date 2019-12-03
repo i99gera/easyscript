@@ -290,26 +290,40 @@ while q:
   ws=0
   nq+="'"
   q=q[1:]
- elif ws==0 and q[:2]=='/*':
+ elif ws==0 and q[:2]=='%*':
   ws=4
   q=q[2:]
- elif ws==4 and q[:2]=='*/':
+ elif ws==4 and q[:2]=='*%':
+  ws=0
+  q=q[2:]
+ elif ws==0 and q[:2]=='/*':
+  ws=5
+  q=q[2:]
+ elif ws==5 and q[:2]=='*/':
   ws=0
   q=q[2:]
  elif ws==0 and q[:1]=='#':
-  ws=5
+  ws=6
   q=q[1:]
- elif ws==5 and q[:1]=='\n':
+ elif ws==6 and q[:1]=='\n':
   ws=0
   q=q[1:]
  elif ws==0:
   nq+=q[0]
   q=q[1:]
- elif ws<4:
+ elif ws==1:
+  add=q[0]
+  q=q[1:]
+  if add=='\n':
+   add='\\n'
+  if add=='\'':
+   add='\\\''
+  if add=='\"':
+   add='\\\"'
+  nq+=add
+ elif ws<5:
   nq+=chr(msym+ord(q[0]))
   q=q[1:]
-  if nq[-1]=='\n':
-   nq=nq[:-1]+'\\n'
  else:
   q=q[1:]
 q=nq
