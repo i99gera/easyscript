@@ -66,6 +66,16 @@ if '-vars' in argv:
  argv=[w for w in argv if w!='-vars']
  rvars=1
 ###############################
+brtg=0
+if '-brtg' in argv:
+ argv=[w for w in argv if w!='-brtg']
+ brtg=1
+###############################
+node=0
+if '-node' in argv:
+ argv=[w for w in argv if w!='-node']
+ node=1
+###############################
 unrun=1
 if '-c' in argv:
  argv=[w for w in argv if w != '-c']
@@ -202,7 +212,9 @@ ort=q
 ##############################
 if restore:
  a=open('restore','w')
- a.write(unhexlify(q.split('\n')[0][2:].encode()).decode())
+ q=q.split('\n')[0]
+ q=[w for w in q if w in '0123456789abcdef']
+ a.write(unhexlify(q.split('\n')[0].encode()).decode())
  a.close()
  exit()
 ##############################
@@ -315,7 +327,10 @@ while q:
   add=q[0]
   q=q[1:]
   if add=='\n':
-   add='\\n'
+   if brtg:
+    add='<br>'
+   else:
+    add='\\n'
   if add=='\'':
    add='\\\''
   if add=='\"':
@@ -345,7 +360,10 @@ for w in q:
   w[1]=w[1][:-1]
 ###############################
 for w in q:
- if w[1][-1] not in ':;' and w[1].split(' ')[0] not in ['import']:
+ nodc=':;'
+ if node:
+  nodc+='>'
+ if w[1][-1] not in nodc and w[1].split(' ')[0] not in ['import']:
    w[1]+=';'
 ###############################
 deb=-1
@@ -360,26 +378,27 @@ for w in q:
   debug[wd[0]]=wd[1]
   w[1]='int debug_'+w[1]
 ###############################
-main=[]
-inmain=1
-for w in q:
- if w[0] == 0:
-  inmain=1
- if w[1][:4] == 'def ':
-  inmain=0
- if w[1][:6] == 'global' and w[1][-1] == ':':
-  inmain=2
-  w[1]=''
- if inmain==1:
-  main+=[w[:]]
-  w[1]=''
- if inmain==2:
-  w[0]-=1
-q=[w for w in q if w[1] != '']
-q+=[[0,'def int main():','']]
-for w in main:
- w[0]+=1
-q+=main
+if node==0:
+ main=[]
+ inmain=1
+ for w in q:
+  if w[0] == 0:
+   inmain=1
+  if w[1][:4] == 'def ':
+   inmain=0
+  if w[1][:6] == 'global' and w[1][-1] == ':':
+   inmain=2
+   w[1]=''
+  if inmain==1:
+   main+=[w[:]]
+   w[1]=''
+  if inmain==2:
+   w[0]-=1
+ q=[w for w in q if w[1] != '']
+ q+=[[0,'def int main():','']]
+ for w in main:
+  w[0]+=1
+ q+=main
 ###############################
 linow=-1
 switch=[]
@@ -785,7 +804,10 @@ for w in q:
   w[1]=w[1][4:-1]
   listvars+=[dict()]
   if len(w[1].split('(')[0].split())<2:
-   w[1]='int '+w[1]
+   if node:
+    w[1]='function '+w[1]
+   else:
+    w[1]='int '+w[1]
    #prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m unktown type of function: '+w[1])
    #exit()
   defnow+=[[w[0],w[1].split('(')[0].split()[1]]]
@@ -817,7 +839,7 @@ for w in q:
   if tmptype in struct:
    nw=nw
   w[1]=nw[:-1]+';'
- elif '=' in w[1] and set(w[1].split('=')[0].strip()) | set(asym) == set(asym) and itype(w[1].split('=')[0])=='':
+ elif node == 0 and '=' in w[1] and set(w[1].split('=')[0].strip()) | set(asym) == set(asym) and itype(w[1].split('=')[0])=='':
   init(itype(w[1][:-1].split('=')[1])+' '+w[1].split('=')[0])
   w[1]=unp(itype(w[1][:-1].split('=')[1]))+' '+w[1]
 ###############################
@@ -858,8 +880,12 @@ for w in mod:
 q=rmods+mods+q
 ###############################
 ort=hexlify(ort.encode()).decode()
-a=open('outcode.cpp','w')
-a.write('//'+ort+'\n'+q)
+if node:
+ a=open('index.html','w')
+ a.write('<!--'+ort+'-->\n'+q)
+else:
+ a=open('outcode.cpp','w')
+ a.write('////'+ort+'\n'+q)
 a.close()
 ###############################
 if unrun and rvars==0 and sh('g++ outcode.cpp') == 0:
