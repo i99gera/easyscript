@@ -20,7 +20,7 @@ asym='qazwsxedcrfvtgbyhnujmikolp_QAZWSXEDCRFVTGBYHNUJMIKOLP0192837465'
 quo=0
 struct=dict()
 maint=['str','int','float','char','double','bool','void','file']
-unpac={'c':'const','u':'unsigned','l':'long'}
+unpac={'c':'const','u':'unsigned','l':'long','s':'static'}
 io={
  'int':'i',
  'lint':'li',
