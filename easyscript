@@ -199,11 +199,11 @@ def init(q,fun=None):
 ###############################
 if not (argv):
  print('and what file should I compile?')
- exit()
+ exit(1)
 ###############################
 if not(exists(argv[0])):
  prrint('\x1b[91m[error]\x1b[0m Could not find '+argv[0])
- exit()
+ exit(2)
 ###############################
 a=open(argv[0])
 q=a.read()
@@ -627,16 +627,12 @@ for w in q:
   w[1]=w[1][5:-2]
   te=1
   op=1
-  prin=20
   while op:
    if w[1][-te]=='[':
     op-=1
    if w[1][-te]==']':
     op+=1
    te+=1
-   prin-=1
-   if prin==0:
-    exit()
   tmpedd=w[1][:-te+1]
   tmpadd=w[1][-te+2:]
   w[1]=tmpedd+'.push_back('+tmpadd+');'
@@ -689,7 +685,7 @@ for w in q:
      tmp2+=','+'&('*add+e.strip()+')'*add
     else:
      prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m could not scan '+tmptype+' at '+w[1])
-     exit()
+     exit(3)
   w[1]=tmp3+'scanf("'+tmp1+'"'+tmp2+');'
  elif [e for e in w[1] if e!=' '][:6] == list('print('):
   mod+=['stdio.h']
@@ -722,7 +718,7 @@ for w in q:
      tmp2+=','+e.strip()
     else:
      prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m could not print '+tmptype+' at '+w[1])
-     exit()
+     exit(4)
   w[1]='printf("'+sep.join(tmp1)+end+'"'+tmp2+');'
   if 'printlimit' in debug:
    w[1]+='debug_printlimit--;if (debug_printlimit == 0) {printf("\033[31m[debug_printlimit]\033[0m\\n");debug_printlimit=1/debug_printlimit;}'
@@ -761,7 +757,7 @@ for w in q:
      tmp2+=','+'&('*add+e.strip()+')'*add
     else:
      prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m could not scan '+tmptype+' at '+w[1])
-     exit()
+     exit(5)
   w[1]=tmp3+'fscanf('+file+',"'+tmp1+'"'+tmp2+');'
  elif [e for e in w[1] if e!=' '][:7] == list('fprint('):
   mod+=['stdio.h']
@@ -796,7 +792,7 @@ for w in q:
      tmp2+=','+e.strip()
     else:
      prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m could not print '+tmptype+' at '+w[1])
-     exit()
+     exit(6)
   w[1]='fprintf('+file+',"'+sep.join(tmp1)+end+'"'+tmp2+');'
   if 'printlimit' in debug:
    w[1]+='debug_printlimit--;if (debug_printlimit < 0) {printf("\033[31m[debug_printlimit]\033[0m\\n");return 0;}'
