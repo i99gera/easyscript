@@ -445,13 +445,13 @@ for w in q:
   w[1]+='for(index_'+tmpit+'=0,'+tmpit+'='+tmpar+'[index_'+tmpit+'];index_'+tmpit+'<len_'+tmpar+';'+tmpar+'[index_'+tmpit+']='+tmpit+',index_'+tmpit+'++)'
   w[2]+=tmpit+'='+tmpar+'[index_'+tmpit+'];'
  elif w[1][:7] == 'import ':
-  mod+=[w[1][7:]]
+  mod+=[w[1][7:-1]]
   w[1]=''
  elif w[1][:8] == 'cimport ':
-  mod+=[w[1][8:]]+'.h'
+  mod+=[w[1][8:-1]]+'.h'
   w[1]=''
  elif w[1][:8] == 'limport ':
-  fif+=[w[1][8:]]
+  fif+=[w[1][8:-1].strip()]
   w[1]=''
  elif [e for e in w[1] if e!=' '][:3] == list('sh('):
   mod+=['stdlib.h']
