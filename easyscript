@@ -447,6 +447,12 @@ for w in q:
  elif w[1][:7] == 'import ':
   mod+=[w[1][7:]]
   w[1]=''
+ elif w[1][:8] == 'cimport ':
+  mod+=[w[1][8:]]+'.h'
+  w[1]=''
+ elif w[1][:8] == 'limport ':
+  fif+=[w[1][8:]]
+  w[1]=''
  elif [e for e in w[1] if e!=' '][:3] == list('sh('):
   mod+=['stdlib.h']
   w[1]='system'+w[1][2:]
@@ -801,10 +807,9 @@ q[-1]=''
 ###############################
 q=('\n'*unhack).join(q)
 ###############################
-q=''.join([chr(ord(w)%msym) for w in q])
-###############################
 mod=list(set(mod))
 mods=''
+mmods=''
 uns=list(set(uns))
 for w in uns:
  mods+='using namespace '+w+';\n'
@@ -813,11 +818,17 @@ for w in fif:
  if w=='scani':
   mods+='int scani(){int q;scanf("%i",&q);return q;}\n'
   mod+=['stdio.h']
+ if w=='rand':
+  mmods+='\nsrand(time(NULL));'
+  mod+=['stdlib.h','time.h']
 rmods=''
 mod=list(set(mod))
 for w in mod:
  rmods+='#include <'+w+'>\n'
 q=rmods+mods+q
+q=q.replace('int main(){','int main(){'+mmods)
+###############################
+q=''.join([chr(ord(w)%msym) for w in q])
 ###############################
 ort=hexlify(ort.encode()).decode()
 if node:
