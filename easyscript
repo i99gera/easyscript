@@ -88,6 +88,8 @@ if '-restore' in argv:
 ###############################
 def itype(q):
  q=q.strip()
+ if q=='':
+  return ''
  if q[0]=='*':
   q=q[1:]
  e=q
