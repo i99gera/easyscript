@@ -11,7 +11,6 @@ from random import randint
 from binascii import hexlify
 from binascii import unhexlify
 msym=65536
-vars=dict()
 mod=[]
 uns=[]
 fif=[]
@@ -19,8 +18,8 @@ com=[]
 asym='qazwsxedcrfvtgbyhnujmikolp_QAZWSXEDCRFVTGBYHNUJMIKOLP0192837465'
 quo=0
 struct=dict()
-maint=['str','int','float','char','double','bool','void','file']
-unpac={'c':'const','u':'unsigned','l':'long','s':'static','e':'extern'}
+maint=['str','int','float','char','double','bool','void','file','auto']
+unpac={'c':'const','u':'unsigned','l':'long','s':'static','e':'extern','g':'one_string_global'}
 io={
  'int':'i',
  'lint':'li',
@@ -66,6 +65,16 @@ if '-vars' in argv:
  argv=[w for w in argv if w!='-vars']
  rvars=1
 ###############################
+uncom=1
+if '-u' in argv:
+ argv=[w for w in argv if w!='-u']
+ uncom=0
+###############################
+brief=0
+if '-b' in argv:
+ argv=[w for w in argv if w!='-b']
+ brief=1
+###############################
 brtg=0
 if '-brtg' in argv:
  argv=[w for w in argv if w!='-brtg']
@@ -91,6 +100,8 @@ def itype(q):
  if q=='':
   return ''
  if q[0]=='*':
+  q=q[1:]
+ while q[0]=='(':
   q=q[1:]
  e=q
  e=e.split('[')[0]
@@ -155,12 +166,15 @@ def unp(q,ww=0):
    en=w
    be=q[:-len(w)]
    break
- if ww == 2:
+ if ww in [2,3]:
   if be+en:
    if 'l' in be and en == 'float':
     be=be[:be.index('l')]+be[be.index('l')+1:]
     en='double'
-   return ''.join(sorted(be))+en
+   if ww == 2:
+    return ''.join(sorted(be))+en
+   if ww == 3:
+    return [''.join(sorted(be)),en]
   else:
    return q
  if en == 'file':
@@ -181,10 +195,16 @@ def unp(q,ww=0):
   return toex+en
  return q
 ###############################
+def gio(q):
+ q=unp(q,3)
+ q[0]=[w for w in q[0] if w in 'lLu']
+ q[0]=sorted(q[0])
+ if q[1]=='bool':
+  q[1]='int'
+ q[0]=''.join(q[0])
+ return io[q[0]+q[1]]
+###############################
 def init(q,fun=None):
- global defnow
- if fun==None:
-  fun=defnow[-1][1]
  q=q.strip()
  q=' '.join(q.split())
  type=q.split()[0]
@@ -192,11 +212,6 @@ def init(q,fun=None):
  name=q.split('[')[0].split('(')[0].strip()
  global listvars
  listvars[-1][name]=type
- q=q[len(name):]
- global vars
- if fun not in vars.keys():
-  vars[fun]=dict()
- vars[fun][name]=unp(type,2)
  return [type,name]
 ###############################
 if not (argv):
@@ -347,6 +362,8 @@ q=nq
 ###############################
 q=q.replace(';','\n')
 ###############################
+q=q.replace('\t',' ')
+###############################
 q=q.split('\n')
 ###############################
 q=[w for w in q if w != ' '*len(w)]
@@ -399,6 +416,8 @@ if node==0:
   w[0]+=1
  q+=main
 ###############################
+#start#
+###############################
 linow=-1
 switch=[]
 defnow=[[-1,'global']]
@@ -447,10 +466,10 @@ for w in q:
   w[1]+='for(index_'+tmpit+'=0,'+tmpit+'='+tmpar+'[index_'+tmpit+'];index_'+tmpit+'<len_'+tmpar+';'+tmpar+'[index_'+tmpit+']='+tmpit+',index_'+tmpit+'++)'
   w[2]+=tmpit+'='+tmpar+'[index_'+tmpit+'];'
  elif w[1][:7] == 'import ':
-  mod+=[w[1][7:-1]]
+  mod+=[w[1][7:]]
   w[1]=''
  elif w[1][:8] == 'cimport ':
-  mod+=[w[1][8:-1]]+'.h'
+  mod+=[w[1][8:-1]+'.h']
   w[1]=''
  elif w[1][:8] == 'limport ':
   fif+=[w[1][8:-1].strip()]
@@ -678,7 +697,7 @@ for w in q:
    if len(e.split())>1 and unp(e.split()[0],1):
     tmp3+=unp(e.split()[0])+' '+' '.join(e.split()[1:])+';\n'+' '*w[0]
     init(e.split()[0]+' '+' '.join(e.split()[1:]))
-    tmp1+='%'+io[e.split()[0]]
+    tmp1+='%'+gio(e.split()[0])
     tmp2+=','+'&('+' '.join(e.split()[1:])+')'
     continue
    e=e.strip()
@@ -696,7 +715,7 @@ for w in q:
     tmptype=e.split('[')[0].strip().replace('*','')
     deffo=itype(tmptype)
     if deffo:
-     tmp1+='%'+io[deffo]
+     tmp1+='%'+gio(deffo)
      tmp2+=','+'&('*add+e.strip()+')'*add
     else:
      prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m could not scan '+tmptype+' at '+w[1])
@@ -737,7 +756,7 @@ for w in q:
     tmptype=e.split('[')[0].strip().replace('*','')
     deffo=itype(tmptype)
     if deffo:
-     tmp1+=['%'+io[deffo]]
+     tmp1+=['%'+gio(deffo)]
      tmp2+=','+e.strip()
     else:
      prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m could not print '+tmptype+' at '+w[1])
@@ -750,21 +769,22 @@ for w in q:
    w[1]+='debug_printlimit--;if (debug_printlimit < 0) {printf("\033[31m[debug_printlimit]\033[0m\\n");return 0;}'
  elif w[1][:4] == 'def ' and w[1][-1] == ':':
   w[1]=w[1][4:-1]
-  listvars+=[dict()]
   if len(w[1].split('(')[0].split())<2:
    if node:
     w[1]='function '+w[1]
    else:
-    w[1]='int '+w[1]
+    w[1]='auto '+w[1]
    #prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m unktown type of function: '+w[1])
    #exit()
   defnow+=[[w[0],w[1].split('(')[0].split()[1]]]
-  vars[defnow[-1][1]]=dict()
   nw=init(w[1].split('(')[0])
+  listvars+=[dict()]
   nw=unp(nw[0])+' '+nw[1]+'('
   nwl=[]
   for e in w[1].split('(')[1].split(')')[0].split(','):
    if e != ' '*len(e):
+    if ' ' not in e.strip():
+     e='auto '+e
     tmp=init(e)
     nwl+=[unp(tmp[0])+' '+tmp[1]]
   w[1]=nw+','.join(nwl)+')'
@@ -807,6 +827,25 @@ for w in range(len(q)-1):
   struop=-1
 q[-1]=''
 ###############################
+q=('\n').join(q)
+###############################
+q=q.split('\n')
+###############################
+w=0
+while 'int main()' not in q[w]:
+ w+=1
+q1=[]
+q4=q[:w]
+q2=q[w:]
+q3=[]
+for w in q2:
+ if 'one_string_global ' in w:
+  w=w.replace('one_string_global ','')
+  q1+=[w]
+ else:
+  q3+=[w]
+q=q1+q4+q3
+###############################
 q=('\n'*unhack).join(q)
 ###############################
 mod=list(set(mod))
@@ -835,15 +874,22 @@ q=''.join([chr(ord(w)%msym) for w in q])
 ort=hexlify(ort.encode()).decode()
 if node:
  a=open('index.html','w')
- a.write('<!--'+ort+'-->\n'+q)
+ a.write(('<!--'+ort+'-->\n')*uncom+q)
 else:
  a=open('outcode.cpp','w')
- a.write('////'+ort+'\n'+q)
+ a.write(('////'+ort+'\n')*uncom+q)
 a.close()
 ###############################
-if unrun and rvars==0 and sh('g++ outcode.cpp') == 0:
- #prrint('\x1b[93m[compiled] \x1b[0m')
- from time import time
+if unrun and rvars==0:
+ qq=sh('(g++ outcode.cpp 2>&1) > out__tmp____')
+ qqq=open('out__tmp____').read()
+ sh('rm out__tmp____')
+ if qq:
+  if brief:
+   print(qqq[:256])
+  else:
+   print(qqq)
+  exit()
  try:
   q=sh('./a.out')
  except KeyboardInterrupt:
@@ -851,12 +897,4 @@ if unrun and rvars==0 and sh('g++ outcode.cpp') == 0:
  if q:
   prrint()
   prrint('\x1b[93m[exit code: '+str(q)+']\x1b[0m')
-###############################
-if rvars:
- vars=[e+'":"'+vars['main'][e] for e in vars['main'].keys()]
- vars='",\n"'.join(vars)
- if vars:
-  vars='{"'+vars+'"}'
- else:
-  vars='{}'
- open('outvars.out','w').write(vars)
+ exit(q)
