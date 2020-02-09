@@ -202,6 +202,9 @@ def gio(q):
  if q[1]=='bool':
   q[1]='int'
  q[0]=''.join(q[0])
+ if q[1]=='auto':
+  print('\x1b[91m[error]\x1b[0m unable to print type auto')
+  exit()
  return io[q[0]+q[1]]
 ###############################
 def init(q,fun=None):
