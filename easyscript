@@ -95,7 +95,7 @@ if '-restore' in argv:
  argv=[w for w in argv if w!= '-restore']
  restore=1
 ###############################
-def itype(q):
+def itype(q,i=0):
  q=q.strip()
  if q=='':
   return ''
@@ -146,19 +146,16 @@ def itype(q):
    e=vars[w[1]][q]
  e=e.replace('*','')
 '''
+ e=typesplit(e)
+ if i:
+  e[0]=''.join([w for w in e[0] if w not in 'c'])
+ e=e[0]+e[1]
  return e
 ###############################
-def unp(q,ww=0):
- if q == '':
-  return ''
- global mod
- if q[-1]=='*':
-  q=q[:-1]
-  addr=1
- else:
-  addr=0
+def typesplit(q):
+ q=''.join([w for w in q if w in asym])
  if q in struct:
-  return q
+  return ['',q]
  be=''
  en=''
  for w in maint:
@@ -166,11 +163,17 @@ def unp(q,ww=0):
    en=w
    be=q[:-len(w)]
    break
+ if 'l' in be and en == 'float':
+  be=be[:be.index('l')]+be[be.index('l')+1:]
+  en='double'
+ be=''.join(sorted(be))
+ return [be,en]
+###############################
+def unp(q,ww=0):
+ a=typesplit(q)
+ be,en=a
  if ww in [2,3]:
   if be+en:
-   if 'l' in be and en == 'float':
-    be=be[:be.index('l')]+be[be.index('l')+1:]
-    en='double'
    if ww == 2:
     return ''.join(sorted(be))+en
    if ww == 3:
@@ -581,9 +584,9 @@ for w in q:
      ext+='--)'
     '''
 
-   if itype(it)!=itype(end) and itype(end):
-    init(itype(end)+' '+it)
-    w[1]=unp(itype(end))+' '+it+';\n'+' '*w[0]+w[1]
+   if itype(it)!=itype(end,1) and itype(end,1):
+    init(itype(end,1)+' '+it)
+    w[1]=unp(itype(end,1))+' '+it+';\n'+' '*w[0]+w[1]
    #w[1]=ext
  elif w[1][:6] == 'while ' and w[1][-1] == ':':
   w[1]='while('+w[1][6:-1].replace(' and ',' && ').replace(' or ',' || ').replace(' not ',' ! ')+')'
