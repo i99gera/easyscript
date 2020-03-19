@@ -39,11 +39,40 @@ debug=dict()
 casebr=1
 argv =argv[1:]
 listvars=[dict()]
+hm='''
+usage:
+compiles to .cpp then to binary and then run the file
+compiles always to outcode.cpp then to a.out
+./easyscript [args] file
+args can be:
+-c	compile to .cpp and exit
+-r	decompile .cpp file
+-u	create readable .cpp file, cannot be decompiled
+-d	makes .cpp code dirty and unreadable, can be used for creating encrypted code
+-b	in case of error displays only first 256 symbols of error msg
+args cannot be joined, for example use -b -c instead of -bc
+running without args will compile and run
+'''
 ###############################
 unhack=1
-if '-crypt' in argv:
+if '-d' in argv:
  unhack=0
- argv=[w for w in argv if w != '-unhack']
+ argv=[w for w in argv if w != '-d']
+###############################
+if '-h' in argv:
+ argv=[w for w in argv if w != '-h']
+ print(hm)
+ exit()
+###############################
+if '-help' in argv:
+ argv=[w for w in argv if w != '-help']
+ print(hm)
+ exit()
+###############################
+if '--help' in argv:
+ argv=[w for w in argv if w != '--help']
+ print(hm)
+ exit()
 ###############################
 if '-gcc' in argv:
  argv=[w for w in argv if w not in '-gcc']
@@ -59,11 +88,6 @@ if '-gcc' in argv:
   for w in io.keys():
    if 'L' in io[w]:
     io[w]=io[w].replace('L','ll')
-###############################
-rvars=0
-if '-vars' in argv:
- argv=[w for w in argv if w!='-vars']
- rvars=1
 ###############################
 uncom=1
 if '-u' in argv:
@@ -91,7 +115,7 @@ if '-c' in argv:
  unrun=0
 ###############################
 restore=0
-if '-restore' in argv:
+if '-r' in argv:
  argv=[w for w in argv if w!= '-restore']
  restore=1
 ###############################
@@ -221,7 +245,7 @@ def init(q,fun=None):
  return [type,name]
 ###############################
 if not (argv):
- print('and what file should I compile?')
+ print('and what file should I compile? run with -h for help')
  exit(1)
 ###############################
 if not(exists(argv[0])):
@@ -891,16 +915,17 @@ else:
  a.write(('////'+ort+'\n')*uncom+q)
 a.close()
 ###############################
-if unrun and rvars==0:
- qq=sh('(g++ outcode.cpp 2>&1) > out__tmp____')
- qqq=open('out__tmp____').read()
- sh('rm out__tmp____')
- if qq:
-  if brief:
+if unrun:
+ if brief:
+  qq=sh('(g++ outcode.cpp 2>&1) > out__tmp____')
+  qqq=open('out__tmp____').read()
+  sh('rm out__tmp____')
+  if qq:
    print(qqq[:256])
-  else:
-   print(qqq)
-  exit()
+   exit()
+ else:
+  if sh('g++ outcode.cpp'):
+   exit()
  try:
   q=sh('./a.out')
  except KeyboardInterrupt:
