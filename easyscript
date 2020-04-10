@@ -194,6 +194,7 @@ def typesplit(q):
  return [be,en]
 ###############################
 def unp(q,ww=0):
+ global mod
  a=typesplit(q)
  be,en=a
  if ww in [2,3]:
