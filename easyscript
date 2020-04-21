@@ -10,6 +10,7 @@ from os.path import exists
 from random import randint
 from binascii import hexlify
 from binascii import unhexlify
+from time import time
 msym=65536
 mod=[]
 uns=[]
@@ -18,7 +19,7 @@ com=[]
 asym='qazwsxedcrfvtgbyhnujmikolp_QAZWSXEDCRFVTGBYHNUJMIKOLP0192837465'
 quo=0
 struct=dict()
-maint=['str','int','float','char','double','bool','void','file','auto']
+maint=['str','int','float','char','double','bool','void','file','auto','string']
 unpac={'c':'const','u':'unsigned','l':'long','s':'static','e':'extern','g':'one_string_global'}
 io={
  'int':'i',
@@ -29,6 +30,7 @@ io={
  'ldouble':'Lf',
  'char':'c',
  'str':'s',
+ 'string':'s',
  'uint':'u',
  'luint':'lu',
  'lluint':'Lu',
@@ -48,11 +50,17 @@ args can be:
 -c	compile to .cpp and exit
 -r	decompile .cpp file
 -u	create readable .cpp file, cannot be decompiled
--d	makes .cpp code dirty and unreadable, can be used for creating encrypted code
+-d	makes .cpp code dirty and unreadable, can be used for creating encrypted code, but in case of using without -u file can be decompiled and read
 -b	in case of error displays only first 256 symbols of error msg
+-e	show exit code
 args cannot be joined, for example use -b -c instead of -bc
 running without args will compile and run
 '''
+###############################
+exitcode=0
+if '-e' in argv:
+ exitcode=1
+ argv=[w for w in argv if w != '-e']
 ###############################
 unhack=1
 if '-d' in argv:
@@ -125,6 +133,16 @@ def itype(q,i=0):
   return ''
  if q[0]=='*':
   q=q[1:]
+ if q[0]=='-':
+  q=q[1:]
+ if q[0]=='(' and ')' in q and unp(q[1:].split(')')[0],1):
+  return q[1:].split(')')[0]
+ if '.' in q and q.split('.')[1]=='size()':
+  return itype('0')
+ if '.' in q and q.split('.')[1]=='begin()':
+  return itype(q.split('.')[0])
+ if '.' in q and q.split('.')[1]=='end()':
+  return itype(q.split('.')[0])
  while q[0]=='(':
   q=q[1:]
  e=q
@@ -143,18 +161,12 @@ def itype(q,i=0):
   return 'llint'
  if q[-1:]=='L' and (q[:-1].isdigit() or q[0]=='-' and q[1:-1].isdigit()):
   q=int(q[:-1])
-  if -2**63<=q<2**63:
-   return 'lint'
-  else:
-   return 'llint'
+  return 'llint'
  if q.isdigit() or q[:1]=='-' and q[1:].isdigit():
   q=int(q)
-  if -2**31<=q<2**31:
-   return 'int'
-  elif -2**63<=q<2**63:
-   return 'lint'
-  else:
-   return 'llint'
+  return 'llint'
+ if q[0]==q[-1]=="'":
+  return 'char'
  e=''
  global listvars
  for w in listvars:
@@ -172,7 +184,7 @@ def itype(q,i=0):
 '''
  e=typesplit(e)
  if i:
-  e[0]=''.join([w for w in e[0] if w not in 'c'])
+  e[0]=e[0].replace('c','')
  e=e[0]+e[1]
  return e
 ###############################
@@ -211,6 +223,9 @@ def unp(q,ww=0):
  if en == 'str':
   en='char'
   mod+=['string.h']
+ if en == 'string':
+  en='std::string'
+  mod+=['string']
  if ww:
   if be+en:
    return 1
@@ -238,8 +253,8 @@ def gio(q):
 def init(q,fun=None):
  q=q.strip()
  q=' '.join(q.split())
- type=q.split()[0]
- q=' '.join(q.split()[1:]).strip()
+ type,q=q.split(' ',2)
+ q=q.strip()
  name=q.split('[')[0].split('(')[0].strip()
  global listvars
  listvars[-1][name]=type
@@ -534,7 +549,7 @@ for w in q:
    w[1]+='for(index_'+tmpit+'=0,'+tmpit+'='+tmpar+'[index_'+tmpit+'];index_'+tmpit+'<len_'+tmpar+';'+tmpar+'[index_'+tmpit+']='+tmpit+',index_'+tmpit+'++,'+tmpit+'='+tmpar+'[index_'+tmpit+'<len_'+tmpar+'-1?index_'+tmpit+':len_'+tmpar+'-1])'
    '''
   else:
-   test=':'.join(w[1].split(':')[1:]).replace(' and ',' && ').replace(' or ',' || ').replace(' not ',' ! ')
+   test=w[1].split(':',2)[1].replace(' and ',' && ').replace(' or ',' || ').replace(' not ',' ! ')
    w[1]=w[1].split(':')[0]
    te=0
    if '<' in w[1] or '>' in w[1]:
@@ -722,11 +737,12 @@ for w in q:
   tmp1=''
   tmp2=''
   tmp3=''
-  w[1]='('.join(w[1].split('(')[1:])
+  tmp4=''
+  w[1]=w[1].split('(',2)[1]
   w[1]=')'.join(w[1].split(')')[:-1])
   file=w[1].split(',')[0]
   if itype(file)=='file':
-   w[1]=','.join(w[1].split(',')[1:])
+   w[1]=w[1].split(',',2)[1]
   else:
    file=''
   for e in w[1].split(','):
@@ -734,7 +750,12 @@ for w in q:
     tmp3+=unp(e.split()[0])+' '+' '.join(e.split()[1:])+';\n'+' '*w[0]
     init(e.split()[0]+' '+' '.join(e.split()[1:]))
     tmp1+='%'+gio(e.split()[0])
-    tmp2+=','+'&('+' '.join(e.split()[1:])+')'
+    cadd=1
+    if e.split()[0] in ['string','str']:
+     cadd=1-cadd
+    tmp2+=','+'&('*cadd+' '.join(e.split()[1:])+('.begin()' if deffo=='string' else '')+')'*cadd
+    if e.split()[0] == 'string':
+     tmp4+=' '.join(e.split()[1:])+'='+' '.join(e.split()[1:])+'.c_str();'
     continue
    e=e.strip()
    if e[0] == '`':
@@ -748,18 +769,23 @@ for w in q:
     tmp1+='%'+e.split('`')[1].strip()
     tmp2+=','+'&('*add+e.split('`')[0].strip()+')'*add
    else:
-    tmptype=e.split('[')[0].strip().replace('*','')
+    tmptype=e.split('[')[0].strip().replace('*','').strip()
     deffo=itype(tmptype)
     if deffo:
      tmp1+='%'+gio(deffo)
-     tmp2+=','+'&('*add+e.strip()+')'*add
+     cadd=add
+     if deffo=='string':
+      tmp4+=e+'='+e+'.c_str();'
+     if deffo in ['string','str']:
+      cadd=1-cadd
+     tmp2+=','+'&('*cadd+e.strip()+('.begin()' if deffo=='string' else '')+')'*cadd
     else:
      prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m could not scan '+tmptype+' at '+w[1])
      exit(5)
   if file:
-   w[1]=tmp3+'fscanf('+file+',"'+tmp1+'"'+tmp2+');'
+   w[1]=tmp3+'fscanf('+file+',"'+tmp1+'"'+tmp2+');'+tmp4
   else:
-   w[1]=tmp3+'scanf("'+tmp1+'"'+tmp2+');'
+   w[1]=tmp3+'scanf("'+tmp1+'"'+tmp2+');'+tmp4
  elif w[1][:5]=='print' and [e for e in w[1] if e!=' '][:6] == list('print('):
   mod+=['stdio.h']
   tmp1=[]
@@ -793,7 +819,7 @@ for w in q:
     deffo=itype(tmptype)
     if deffo:
      tmp1+=['%'+gio(deffo)]
-     tmp2+=','+e.strip()
+     tmp2+=','+e.strip()+('.begin()' if deffo=='string' else '')
     else:
      prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m could not print '+tmptype+' at '+w[1])
      exit(6)
@@ -846,6 +872,15 @@ for w in q:
  elif node == 0 and '=' in w[1] and set(w[1].split('=')[0].strip()) | set(asym) == set(asym) and itype(w[1].split('=')[0])=='':
   init(itype(w[1][:-1].split('=')[1])+' '+w[1].split('=')[0])
   w[1]=unp(itype(w[1][:-1].split('=')[1]))+' '+w[1]
+ elif ':=' in w[1]:
+  w[1]=w[1].replace(':=','=')
+ if w[1]:
+  bou=''.join([e for e in w[1] if e in asym])
+  while bou in w[1]:
+   bou+=str(time())
+  w[1]=w[1].replace(')',bou+')').replace('(','('+bou).split(bou)
+  w[1]=[unp(e) if e and e[0] not in '()' and e[-1] not in '()' and unp(e,1) else e for e in w[1]]
+  w[1]=''.join(w[1])
 ###############################
 q+=[[0,'','']]
 struop=-1
@@ -918,9 +953,9 @@ a.close()
 ###############################
 if unrun:
  if brief:
-  qq=sh('(g++ outcode.cpp 2>&1) > out__tmp____')
-  qqq=open('out__tmp____').read()
-  sh('rm out__tmp____')
+  #qq=sh('(g++ outcode.cpp 2>&1) > out__tmp____')
+  #qqq=open('out__tmp____').read()
+  #sh('rm out__tmp____')
   if qq:
    print(qqq[:256])
    exit()
@@ -930,8 +965,9 @@ if unrun:
  try:
   q=sh('./a.out')
  except KeyboardInterrupt:
-  q=2
- if q:
-  prrint()
-  prrint('\x1b[93m[exit code: '+str(q)+']\x1b[0m')
- exit(q)
+  if exitcode==0:
+   print()
+ else:
+  if exitcode:
+   prrint('\x1b[93m[exit code: '+str(q)+']\x1b[0m')
+  exit(q)
