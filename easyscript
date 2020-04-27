@@ -20,7 +20,10 @@ asym='qazwsxedcrfvtgbyhnujmikolp_QAZWSXEDCRFVTGBYHNUJMIKOLP0192837465'
 quo=0
 struct=dict()
 maint=['str','int','float','char','double','bool','void','file','auto','string']
+#<<<#<<<< HEAD
 unpac={'h':'short','c':'const','u':'unsigned','l':'long','s':'static','e':'extern','g':'one_string_global'}
+#===#====
+#>>>#>>>> a0b079ec0452d2e4ec1047b5075c3f9b35a4cf3a
 io={
  'hint':'h',
  'hhint':'hh',
@@ -65,11 +68,14 @@ if '-e' in argv:
  exitcode=1
  argv=[w for w in argv if w != '-e']
 ###############################
+#<<<#<<<< HEAD
 smint=0
 if '-s' in argv:
  smint=1
  argv=[w for w in argv if w != '-s']
 ###############################
+#===#====
+#>>>#>>>> a0b079ec0452d2e4ec1047b5075c3f9b35a4cf3a
 unhack=1
 if '-d' in argv:
  unhack=0
@@ -169,6 +175,7 @@ def itype(q,i=0):
   return 'llint'
  if q[-1:]=='L' and (q[:-1].isdigit() or q[0]=='-' and q[1:-1].isdigit()):
   q=int(q[:-1])
+#<<<#<<<< HEAD
   if smint:
    if -2**63<=q<2**63:
     return 'lint'
@@ -184,6 +191,8 @@ def itype(q,i=0):
     return 'lint'
    else:
     return 'llint'
+#===#====
+#>>>#>>>> a0b079ec0452d2e4ec1047b5075c3f9b35a4cf3a
   return 'llint'
  if q[0]==q[-1]=="'":
   return 'char'
@@ -238,9 +247,12 @@ def unp(q,ww=0,m=0):
  if en == 'string':
   en='std::string'
   mod+=['string']
+#<<<#<<<< HEAD
  if en=='int' and smint==0 and m!='main':
   be+=(2-be.count('l'))*'l'
   be=''.join(sorted(be))
+#===#====
+#>>>#>>>> a0b079ec0452d2e4ec1047b5075c3f9b35a4cf3a
  if ww:
   if be+en:
    return 1
@@ -566,8 +578,11 @@ for w in q:
    w[1]+='for(index_'+tmpit+'=0,'+tmpit+'='+tmpar+'[index_'+tmpit+'];index_'+tmpit+'<len_'+tmpar+';'+tmpar+'[index_'+tmpit+']='+tmpit+',index_'+tmpit+'++,'+tmpit+'='+tmpar+'[index_'+tmpit+'<len_'+tmpar+'-1?index_'+tmpit+':len_'+tmpar+'-1])'
    '''
   else:
+#<<<#<<<< HEAD
    test=w[1].split(':',1)
    test=test[1].replace(' and ',' && ').replace(' or ',' || ').replace(' not ',' ! ') if len(test)>1 else ''
+#===#====
+#>>>#>>>> a0b079ec0452d2e4ec1047b5075c3f9b35a4cf3a
    w[1]=w[1].split(':')[0]
    te=0
    if '<' in w[1] or '>' in w[1]:
@@ -766,11 +781,14 @@ for w in q:
   for e in w[1].split(','):
    if len(e.split())>1 and unp(e.split()[0],1):
     tmp3+=unp(e.split()[0])+' '+' '.join(e.split()[1:])+';\n'+' '*w[0]
-    tmp1+='%'+gio(init(e.split()[0]+' '+' '.join(e.split()[1:]))[0])
+#<<<#<<<< HEAD
+    tmp1+='%'+gio(init(e))[0])
     cadd=1
     if e.split()[0] in ['string','str']:
      cadd=1-cadd
     tmp2+=','+'&('*cadd+' '.join(e.split()[1:])+('.begin()' if e.split()[0]=='string' else '')+')'*cadd
+#===#====
+#>>>#>>>> a0b079ec0452d2e4ec1047b5075c3f9b35a4cf3a
     if e.split()[0] == 'string':
      tmp4+=' '.join(e.split()[1:])+'='+' '.join(e.split()[1:])+'.c_str();'
     continue
