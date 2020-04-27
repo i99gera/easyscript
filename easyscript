@@ -20,10 +20,7 @@ asym='qazwsxedcrfvtgbyhnujmikolp_QAZWSXEDCRFVTGBYHNUJMIKOLP0192837465'
 quo=0
 struct=dict()
 maint=['str','int','float','char','double','bool','void','file','auto','string']
-#<<<#<<<< HEAD
 unpac={'h':'short','c':'const','u':'unsigned','l':'long','s':'static','e':'extern','g':'one_string_global'}
-#===#====
-#>>>#>>>> a0b079ec0452d2e4ec1047b5075c3f9b35a4cf3a
 io={
  'hint':'h',
  'hhint':'hh',
@@ -68,14 +65,11 @@ if '-e' in argv:
  exitcode=1
  argv=[w for w in argv if w != '-e']
 ###############################
-#<<<#<<<< HEAD
 smint=0
 if '-s' in argv:
  smint=1
  argv=[w for w in argv if w != '-s']
 ###############################
-#===#====
-#>>>#>>>> a0b079ec0452d2e4ec1047b5075c3f9b35a4cf3a
 unhack=1
 if '-d' in argv:
  unhack=0
@@ -141,7 +135,9 @@ if '-r' in argv:
  argv=[w for w in argv if w!= '-restore']
  restore=1
 ###############################
-def itype(q,i=0):
+def itype(q,i=0,s=0):
+ global smint
+ smi=s+smint
  q=q.strip()
  if q=='':
   return ''
@@ -175,8 +171,7 @@ def itype(q,i=0):
   return 'llint'
  if q[-1:]=='L' and (q[:-1].isdigit() or q[0]=='-' and q[1:-1].isdigit()):
   q=int(q[:-1])
-#<<<#<<<< HEAD
-  if smint:
+  if smi:
    if -2**63<=q<2**63:
     return 'lint'
    else:
@@ -184,15 +179,13 @@ def itype(q,i=0):
   return 'llint'
  if q.isdigit() or q[:1]=='-' and q[1:].isdigit():
   q=int(q)
-  if smint:
+  if smi:
    if -2**31<=q<2**31:
     return 'int'
    elif -2**63<=q<2**63:
     return 'lint'
    else:
     return 'llint'
-#===#====
-#>>>#>>>> a0b079ec0452d2e4ec1047b5075c3f9b35a4cf3a
   return 'llint'
  if q[0]==q[-1]=="'":
   return 'char'
@@ -247,12 +240,9 @@ def unp(q,ww=0,m=0):
  if en == 'string':
   en='std::string'
   mod+=['string']
-#<<<#<<<< HEAD
  if en=='int' and smint==0 and m!='main':
   be+=(2-be.count('l'))*'l'
   be=''.join(sorted(be))
-#===#====
-#>>>#>>>> a0b079ec0452d2e4ec1047b5075c3f9b35a4cf3a
  if ww:
   if be+en:
    return 1
@@ -578,11 +568,8 @@ for w in q:
    w[1]+='for(index_'+tmpit+'=0,'+tmpit+'='+tmpar+'[index_'+tmpit+'];index_'+tmpit+'<len_'+tmpar+';'+tmpar+'[index_'+tmpit+']='+tmpit+',index_'+tmpit+'++,'+tmpit+'='+tmpar+'[index_'+tmpit+'<len_'+tmpar+'-1?index_'+tmpit+':len_'+tmpar+'-1])'
    '''
   else:
-#<<<#<<<< HEAD
    test=w[1].split(':',1)
    test=test[1].replace(' and ',' && ').replace(' or ',' || ').replace(' not ',' ! ') if len(test)>1 else ''
-#===#====
-#>>>#>>>> a0b079ec0452d2e4ec1047b5075c3f9b35a4cf3a
    w[1]=w[1].split(':')[0]
    te=0
    if '<' in w[1] or '>' in w[1]:
@@ -781,14 +768,11 @@ for w in q:
   for e in w[1].split(','):
    if len(e.split())>1 and unp(e.split()[0],1):
     tmp3+=unp(e.split()[0])+' '+' '.join(e.split()[1:])+';\n'+' '*w[0]
-#<<<#<<<< HEAD
     tmp1+='%'+gio(init(e)[0])
     cadd=1
     if e.split()[0] in ['string','str']:
      cadd=1-cadd
     tmp2+=','+'&('*cadd+' '.join(e.split()[1:])+('.begin()' if e.split()[0]=='string' else '')+')'*cadd
-#===#====
-#>>>#>>>> a0b079ec0452d2e4ec1047b5075c3f9b35a4cf3a
     if e.split()[0] == 'string':
      tmp4+=' '.join(e.split()[1:])+'='+' '.join(e.split()[1:])+'.c_str();'
     continue
@@ -821,19 +805,36 @@ for w in q:
    w[1]=tmp3+'fscanf('+file+',"'+tmp1+'"'+tmp2+');'+tmp4
   else:
    w[1]=tmp3+'scanf("'+tmp1+'"'+tmp2+');'+tmp4
- elif w[1][:5]=='print' and [e for e in w[1] if e!=' '][:6] == list('print('):
+ elif (w[1][:5]=='print' and [e for e in w[1] if e!=' '][:6] == list('print(')) or '=' in w[1] and '[' not in w[1].split('=')[0] and (itype(w[1].split('=')[0]) in ['str','string'] or itype(w[1].split('=')[0]) in ['str','string']):
+  sss=0
+  if itype(w[1].split('=')[0]) in ['str','string']:
+   sss=1
+  if itype(w[1].split('+=')[0]) in ['str','string']:
+   sss=2
   mod+=['stdio.h']
   tmp1=[]
   tmp2=''
-  sep=' '
-  end='\\n'
-  w[1]='('.join(w[1].split('(')[1:])
-  w[1]=')'.join(w[1].split(')')[:-1])
-  file=w[1].split(',')[0]
-  if '.' not in file and itype(file)=='file':
-   w[1]=','.join(w[1].split(',')[1:])
+  tmp4=''
+  if sss==0:
+   sep=' '
+   end='\\n'
+   w[1]='('.join(w[1].split('(')[1:])
+   w[1]=')'.join(w[1].split(')')[:-1])
+   file=w[1].split(',')[0]
+   if '.' not in file and itype(file)=='file':
+    w[1]=','.join(w[1].split(',')[1:])
+   else:
+    file=''
   else:
-   file=''
+   sep=''
+   end=''
+   strin=w[1].split('=')[0]
+   if strin[-1]=='+':
+    strin=strin[:-1]
+   w[1]=w[1].split('=',1)[1]
+   if sss==2:
+    w[1]=strin+','+w[1]
+   w[1]=w[1][:-1]
   for e in w[1].split(','):
    e=e.strip()
    if e=='':
@@ -851,17 +852,21 @@ for w in q:
     tmp2+=','+e.split('`')[0].strip()
    else:
     tmptype=e.split('[')[0].strip().replace('*','')
-    deffo=itype(tmptype)
+    deffo=itype(tmptype,s=1)
     if deffo:
      tmp1+=['%'+gio(deffo)]
      tmp2+=','+e.strip()+('.begin()' if deffo=='string' else '')
     else:
      prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m could not print '+tmptype+' at '+w[1])
      exit(6)
-  if file:
-   w[1]='fprintf('+file+',"'+sep.join(tmp1)+end+'"'+tmp2+');'
+  if itype(strin)=='string' and sss:
+   tmp4+=strin+'='+strin+'.c_str();'
+  if sss:
+   w[1]='sprintf('+strin+('.begin()' if itype(strin)=='string' else '')+',"'+sep.join(tmp1)+end+'"'+tmp2+');'+tmp4
+  elif file:
+   w[1]='fprintf('+file+',"'+sep.join(tmp1)+end+'"'+tmp2+');'+tmp4
   else:
-   w[1]='printf("'+sep.join(tmp1)+end+'"'+tmp2+');'
+   w[1]='printf("'+sep.join(tmp1)+end+'"'+tmp2+');'+tmp4
   if 'printlimit' in debug:
    w[1]+='debug_printlimit--;if (debug_printlimit < 0) {printf("\033[31m[debug_printlimit]\033[0m\\n");return 0;}'
  elif w[1][:4] == 'def ' and w[1][-1] == ':':
