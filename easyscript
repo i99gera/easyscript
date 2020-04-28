@@ -135,24 +135,50 @@ if '-r' in argv:
  argv=[w for w in argv if w!= '-restore']
  restore=1
 ###############################
+def bs(q,e):
+ q=q.split(e)
+ w=0
+ d=1
+ while d:
+  d=0
+  while w<len(q):
+   w+=1
+   if q[w-1].count('(')>q[w-1].count(')') or q[w-1].count('[')>q[w-1].count(']') or q[w-1].count('{')>q[w-1].count('}'):
+    q[w-1]+=e+q[w]
+    q=q[:w]+q[w+1:]
+    w=len(q)
+    d=1
+ return q
+###############################
 def itype(q,i=0,s=0):
  global smint
  smi=s+smint
  q=q.strip()
+ sym=asym+'.'
  if q=='':
   return ''
+ if q[0]=='(' and ')' in q and unp(q[1:].split(')')[0],1):
+  return q[1:].split(')')[0]
+ b='q'.join([w for w in q if w in sym])
+ while b in q:
+  b+=str(time()).replace('.','q')
+ for w in q:
+  if w not in sym:
+   q=q.replace(w,b)
+ q=[w for w in q.split(b) if w][0]
+ '''
  if q[0]=='*':
   q=q[1:]
  if q[0]=='-':
   q=q[1:]
- if q[0]=='(' and ')' in q and unp(q[1:].split(')')[0],1):
-  return q[1:].split(')')[0]
+ '''
  if '.' in q and q.split('.')[1]=='size()':
   return itype('0')
  if '.' in q and q.split('.')[1]=='begin()':
   return itype(q.split('.')[0])
  if '.' in q and q.split('.')[1]=='end()':
   return itype(q.split('.')[0])
+ '''
  while q[0]=='(':
   q=q[1:]
  e=q
@@ -163,6 +189,7 @@ def itype(q,i=0,s=0):
  e=e.split('-')[0]
  e=e.split('*')[0]
  q=e.split('/')[0]
+ '''
  if '.' in q:
   q=q.split('.')
   q=[w.strip() for w in q]
@@ -487,7 +514,6 @@ if node==0:
 ###############################
 linow=-1
 switch=[]
-defnow=[[-1,'global']]
 for w in q:
  listvars=listvars[:w[0]+1]
  while len(listvars)<w[0]+1:
@@ -497,8 +523,6 @@ for w in q:
   switch=switch[:-1]
  if w[0] <= struos:
   struop=''
- while w[0] <= defnow[-1][0]:
-  defnow=defnow[:-1]
  if switch and switch[-1][1] == -1 and w[1][-1]==':':
   switch[-1][1]=w[0]
   w1=w[1][:-1]
@@ -760,12 +784,12 @@ for w in q:
   tmp4=''
   w[1]=w[1].split('(',2)[1]
   w[1]=')'.join(w[1].split(')')[:-1])
-  file=w[1].split(',')[0] if ',' in w[1] else ''
+  file=bs(w[1],',')[0] if ',' in w[1] else ''
   if itype(file)=='file':
-   w[1]=w[1].split(',',2)[1]
+   w[1]=','.join(bs(w[1],',')[1:])
   else:
    file=''
-  for e in w[1].split(','):
+  for e in bs(w[1],','):
    if len(e.split())>1 and unp(e.split()[0],1):
     tmp3+=unp(e.split()[0])+' '+' '.join(e.split()[1:])+';\n'+' '*w[0]
     tmp1+='%'+gio(init(e)[0])
@@ -820,9 +844,9 @@ for w in q:
    end='\\n'
    w[1]='('.join(w[1].split('(')[1:])
    w[1]=')'.join(w[1].split(')')[:-1])
-   file=w[1].split(',')[0]
+   file=bs(w[1],',')[0]
    if '.' not in file and itype(file)=='file':
-    w[1]=','.join(w[1].split(',')[1:])
+    w[1]=','.join(bs(w[1],',')[1:])
    else:
     file=''
   else:
@@ -833,9 +857,9 @@ for w in q:
     strin=strin[:-1]
    w[1]=w[1].split('=',1)[1]
    if sss==2:
-    w[1]=strin+','+w[1]
+    w[1]=strin+'+'+w[1]
    w[1]=w[1][:-1]
-  for e in w[1].split(','):
+  for e in bs(w[1],'+' if sss else ','):
    e=e.strip()
    if e=='':
     pass
@@ -859,7 +883,7 @@ for w in q:
     else:
      prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m could not print '+tmptype+' at '+w[1])
      exit(6)
-  if itype(strin)=='string' and sss:
+  if sss and itype(strin)=='string':
    tmp4+=strin+'='+strin+'.c_str();'
   if sss:
    w[1]='sprintf('+strin+('.begin()' if itype(strin)=='string' else '')+',"'+sep.join(tmp1)+end+'"'+tmp2+');'+tmp4
@@ -876,9 +900,6 @@ for w in q:
     w[1]='function '+w[1]
    else:
     w[1]='auto '+w[1]
-   #prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m unktown type of function: '+w[1])
-   #exit()
-  defnow+=[[w[0],w[1].split('(')[0].split()[1]]]
   nw=init(w[1].split('(')[0])
   listvars+=[dict()]
   nw=unp(nw[0],m=nw[1])+' '+nw[1]+'('
@@ -993,9 +1014,9 @@ a.close()
 ###############################
 if unrun:
  if brief:
-  #qq=sh('(g++ outcode.cpp 2>&1) > out__tmp____')
-  #qqq=open('out__tmp____').read()
-  #sh('rm out__tmp____')
+  qq=sh('(g++ outcode.cpp 2>&1) > out__tmp____')
+  qqq=open('out__tmp____').read()
+  sh('rm out__tmp____')
   if qq:
    print(qqq[:256])
    exit()
