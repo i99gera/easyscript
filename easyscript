@@ -297,7 +297,7 @@ def gio(q):
 def init(q,fun=None):
  q=q.strip()
  q=' '.join(q.split())
- type,q=q.split(' ',2)
+ type,q=q.split(' ',1)
  q=q.strip()
  name=q.split('[')[0].split('(')[0].replace('*','').strip()
  if typesplit(type)[1]=='int' and smint==0 and name!='main':
@@ -331,60 +331,6 @@ if restore:
 ##############################
 q+='\npass\n'
 ##############################
-'''
-q=q.split('\n')
-for w in range(len(q)):
- if '#' in q[w]:
-  q[w]=q[w].replace('#','/*')+'*/'
-q='\n'.join(q)
-##############################
-q=q.replace("",chr(msym+1))#
-quo=0
-nq=''
-for w in q:
- if w == chr(msym+1):
-  quo=1-quo
- if quo and w=='\n':
-  nq+='\\n'
- else:
-  nq+=w
-q=nq.replace(chr(msym+1),'"')
-###############################
-nq=''
-bs=0
-for w in q:
- if w == '"' and quo in [1,0] and bs==0:
-  quo=1-quo
-  nq+=w
-  continue
- if w == "'" and quo in [2,0] and bs==0:
-  quo=2-quo
-  nq+=w
-  continue
- if quo:
-  nq+=chr(msym+ord(w))
- else:
-  nq+=w
- bs=0
- if w=='\\':
-  bs=1
-q=nq
-###############################
-q=''.join([chr(ord(w)%msym) for w in q])
-q=q.replace('/*',chr(msym+1))
-q=q.replace('*/',chr(msym+2))
-com=1
-nq=''
-for w in q:
- if w==chr(msym+1):
-  com=0
- if com:
-  nq+=w
- if w==chr(msym+2):
-  com=1
-q=nq
-'''
-###############################
 q=''.join([chr(ord(w)%msym) for w in q])
 nq=''
 ws=0
@@ -454,9 +400,25 @@ while q:
   q=q[1:]
 q=nq
 ###############################
-q=q.replace(';','\n')
-###############################
 q=q.replace('\t',' ')
+###############################
+nq=''
+while len(q)>1:
+ nq+=q[0]
+ if set(';\n ')&set(q[:2]):
+  pass
+ elif q[0] in asym and q[1] in asym:
+  pass
+ elif q[:2] in ['++','--','==','!=','>=','<=','&&','||','<<','>>','+=','-=','*=','/=','%=','&=','|=','^=','<=','>=','->','::']:
+  pass
+ elif ord(max(q[:2])) >= msym:
+  pass
+ else:
+  nq+=' '
+ q=q[1:]
+q=nq+q
+###############################
+q=q.replace(';','\n')
 ###############################
 q=q.split('\n')
 ###############################
@@ -470,17 +432,20 @@ for w in q:
   w[1]=w[1][:-1]
 ###############################
 for w in q:
- nodc=':;'+chr(msym+ord('\n'))
+ w[1]=' '.join(w[1].split())
+###############################
+for w in q:
+ nodc=':;'+chr(msym+ord('\n'))+chr(msym+ord(';'))
  if node:
   nodc+='>'
- if w[1][-1] not in nodc and w[1].split(' ')[0] not in ['import']:
+ if w[1][-1] not in nodc:
    w[1]+=';'
 ###############################
 deb=-1
 for w in q:
- if w[1][:5]=='debug' and w[1][-1]==':':
+ if w[1]=='debug :':
   deb=w[0]
-  w[1]='global:'
+  w[1]='global :'
  elif w[0]<=deb:
   deb=-1
  elif deb>-1:
@@ -496,7 +461,7 @@ if node==0:
    inmain=1
   if w[1][:4] == 'def ':
    inmain=0
-  if w[1][:6] == 'global' and w[1][-1] == ':':
+  if w[1]== 'global :':
    inmain=2
    w[1]=''
   if inmain==1:
@@ -505,7 +470,7 @@ if node==0:
   if inmain==2:
    w[0]-=1
  q=[w for w in q if w[1] != '']
- q+=[[0,'def int main():','']]
+ q+=[[0,'def int main ( ) :','']]
  for w in main:
   w[0]+=1
  q+=main
@@ -557,10 +522,10 @@ for w in q:
   w[1]+='for(index_'+tmpit+'=0,'+tmpit+'='+tmpar+'[index_'+tmpit+'];index_'+tmpit+'<len_'+tmpar+';'+tmpar+'[index_'+tmpit+']='+tmpit+',index_'+tmpit+'++)'
   w[2]+=tmpit+'='+tmpar+'[index_'+tmpit+'];'
  elif w[1][:7] == 'import ':
-  mod+=[w[1][7:]]
+  mod+=[w[1][7:-1]]
   w[1]=''
  elif [e for e in w[1] if e != ' '] == list('aimport;'):
-  mod+=['bits/stdc++']
+  mod+=['bits/stdc++.h']
   w[1]=''
  elif w[1][:8] == 'cimport ':
   mod+=[w[1][8:-1]+'.h']
@@ -776,7 +741,7 @@ for w in q:
   w[1]='int len_'+tmpvar.strip()+'='+tmpcount+';'+tmpouttype +'*'+tmpvar+'=('+tmpouttype+'*)malloc(sizeof('+tmpouttype+')*(len_'+tmpvar.strip()+'));'
  elif w[1][:3] == 'if ' and w[1][-1] == ':':
   w[1]='if('+w[1][3:-1].replace(' and ',' && ').replace(' or ',' || ').replace(' not ',' ! ')+')'
- elif w[1][:4]=='scan' and [e for e in w[1] if e!=' '][:5] == list('scan('):
+ elif w[1][:6]=='scan (':
   mod+=['stdio.h']
   tmp1=''
   tmp2=''
@@ -796,7 +761,7 @@ for w in q:
     cadd=1
     if e.split()[0] in ['string','str']:
      cadd=1-cadd
-    tmp2+=','+'&('*cadd+' '.join(e.split()[1:])+('.begin()' if e.split()[0]=='string' else '')+')'*cadd
+    tmp2+=','+'&('*cadd+e.split(' ',1)+('.begin()' if e.split()[0]=='string' else '')+')'*cadd
     if e.split()[0] == 'string':
      tmp4+=' '.join(e.split()[1:])+'='+' '.join(e.split()[1:])+'.c_str();'
     continue
@@ -829,11 +794,11 @@ for w in q:
    w[1]=tmp3+'fscanf('+file+',"'+tmp1+'"'+tmp2+');'+tmp4
   else:
    w[1]=tmp3+'scanf("'+tmp1+'"'+tmp2+');'+tmp4
- elif (w[1][:5]=='print' and [e for e in w[1] if e!=' '][:6] == list('print(')) or '=' in w[1] and '[' not in w[1].split('=')[0] and (itype(w[1].split('=')[0]) in ['str','string'] or itype(w[1].split('=')[0]) in ['str','string']):
+ elif w[1][:7]=='print ('or '=' in w[1] and '[' not in w[1].split('=')[0] and itype(w[1]) in ['str','string']:
   sss=0
-  if itype(w[1].split('=')[0]) in ['str','string']:
+  if itype(w[1]) in ['str','string']:
    sss=1
-  if itype(w[1].split('+=')[0]) in ['str','string']:
+  if itype(w[1]) in ['str','string']:
    sss=2
   mod+=['stdio.h']
   tmp1=[]
