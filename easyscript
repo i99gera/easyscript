@@ -330,13 +330,28 @@ if restore:
  q=q.split('\n')[0]
  q=[w for w in q if w in '0123456789abcdef']
  q=''.join(q)
- print(q)
  a.write(unhexlify(q.encode()).decode())
  a.close()
  exit()
 ##############################
 q+='\npass\n'
 ##############################
+if 'compile' in q:
+ cs1,cs=q.split('compile',1)
+ cs2=cs
+ while cs[0] in ' \t':
+  cs=cs[1:]
+ if cs[0]==':':
+  cs=cs[1:]
+  while cs[0] in ' \t':
+   cs=cs[1:]
+  if cs[0]=='\n':
+   cs=cs[1:]
+   while cs[0] in ' \t':
+    cs=cs[1:]
+   gcomp,cs=cs.split('\n',1)
+   q=cs1+cs
+###############################
 q=''.join([chr(ord(w)%msym) for w in q])
 nq=''
 ws=0
@@ -415,6 +430,8 @@ while len(q)>1:
  if set(';\n ')&set(q[:2]):
   pass
  elif q[0] in asym and q[1] in asym:
+  pass
+ elif q[0] in asym and q[1] in '"\'':
   pass
  elif q[:2] in ['++',':=','--','==','!=','>=','<=','&&','||','<<','>>','+=','-=','*=','/=','%=','&=','|=','^=','<=','>=','->','::']:
   pass
