@@ -93,10 +93,32 @@ if '-gcc' in argv:
     io[w]=io[w].replace('L','ll')
 ###############################
 def warn(*q,**w):
+ cont=0
+ if 'cont' in w:
+  cont=1
+  del(w['cont'])
  print('\x1b[1;95m[warning]\x1b[0m',*q,**w)
  global force
- if force==0:
+ if force==0 and cont==0:
   exit(1)
+###############################
+def last():
+ q=pp('ls -t').read().split('\n')
+ eder=1
+ while eder and q:
+  if q[0] in ['outcode.cpp','a.out']:
+   q=q[1:]
+   continue
+  try:
+   open(q[0])
+  except:
+   q=q[1:]
+  else:
+   eder=0
+ if q:
+  return q[0]
+ else:
+  warn('nothing to compile')
 ###############################
 def dif(q):
  global asym
@@ -292,12 +314,12 @@ def init(type,q=None):
  return [type,name]
 ###############################
 if not (argv):
- warn('and what file should I compile? run with -h for help')
- argv+=[pp('ls -t').read().split('\n')[0]]
+ argv+=[last()]
+ warn('no file selected to compile: using '+argv[-1],cont=1)
 ###############################
 if not(exists(argv[0])):
  warn('Could not find '+argv[0])
- argv+=[pp('ls -t').read().split('\n')[0]]
+ argv+=[last()]
 ###############################
 a=open(argv[0])
 q=a.read()
