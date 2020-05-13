@@ -8,9 +8,9 @@ from os import system as sh
 from os import popen as pp
 from os.path import exists
 from random import randint
+from random import choice
 from binascii import hexlify
 from binascii import unhexlify
-from time import time
 msym=65536
 mod=[]
 uns=[]
@@ -138,6 +138,13 @@ if '-r' in argv:
  argv=[w for w in argv if w!= '-restore']
  restore=1
 ###############################
+def dif(q):
+ global asym
+ a=choice(asym)
+ while a in q:
+  a+=choice(asym)
+ return a
+###############################
 def bs(q,e):
  q=q.split(e)
  w=0
@@ -162,17 +169,15 @@ def itype(q,i=0,s=0):
   return ''
  if q[0]=='(' and ')' in q and unp(q[1:].split(')')[0],1):
   return q[1:].split(')')[0]
- b='q'.join([w for w in q if w in sym])
- while b in q:
-  b+=str(time()).replace('.','q')
+ b=dif(q)
  for w in q:
   if w not in sym:
    q=q.replace(w,b)
  q=[w for w in q.split(b) if w][0]
  if smi:
-  df={'strlen':'int'}
+  df={'strlen':'int','fopen':'file'}
  else:
-  df={'strlen':'llint'}
+  df={'strlen':'llint','fopen':'file'}
  if q in df:
   return df[q]
  if '.' in q and q.split('.')[1]=='size':
@@ -295,13 +300,25 @@ def gio(q):
   exit()
  return io[q[0]+q[1]]
 ###############################
-def init(q,fun=None):
+def init(type,q=None):
  global node
  if node:
-  return ['',q]
+  return ['',type+' '+q]
+ if q==None:
+  type=q
+  q=' '.join(q.split())
+  q=q.split(' ',1)
+  if len(q)==1:
+   print('\x1b[95m[warning]\x1b[0m var '+q[0]+'is uncreated')
+   return ['',q[0]]
+  if len(q)==0:
+   print('\x1b[95m[warning]\x1b[0m internall error')
+   return ['','']
+  type,q=q
  q=q.strip()
  q=' '.join(q.split())
- type,q=q.split(' ',1)
+ type=type.strip()
+# type,q=q.split(' ',1)
  q=q.strip()
  name=q.split('[')[0].split('(')[0].replace('*','').strip()
  if typesplit(type)[1]=='int' and smint==0 and name!='main':
@@ -433,7 +450,7 @@ while len(q)>1:
   pass
  elif q[0] in asym and q[1] in '"\'':
   pass
- elif q[:2] in ['++',':=','--','==','!=','>=','<=','&&','||','<<','>>','+=','-=','*=','/=','%=','&=','|=','^=','<=','>=','->','::']:
+ elif q[:2] in ['++',':=','--','==','!=','>=','<=','&&','||','<<','>>','+=','-=','*=','/=','%=','&=','|=','^=','<=','>=','->','::','""',"''"]:
   pass
  elif ord(max(q[:2])) >= msym:
   pass
@@ -538,10 +555,10 @@ for w in q:
   tmpit='each_'+tmpar
   w[1]=''
   if itype('index_'+tmpit)=='':
-   init('int index_'+tmpit)
+   init('int','index_'+tmpit)
    w[1]+='int index_'+tmpit+';\n'+' '*w[0]
   if itype('tmpit')=='':
-   init(itype(tmpar)+' '+tmpit)
+   init(itype(tmpar),tmpit)
    w[1]+=unp(itype(tmpar))+' '+tmpit+';\n'+' '*w[0]
   w[1]+='for(index_'+tmpit+'=0,'+tmpit+'='+tmpar+'[index_'+tmpit+'];index_'+tmpit+'<len_'+tmpar+';'+tmpar+'[index_'+tmpit+']='+tmpit+',index_'+tmpit+'++)'
   w[2]+=tmpit+'='+tmpar+'[index_'+tmpit+'];'
@@ -557,9 +574,9 @@ for w in q:
  elif w[1][:8] == 'limport ':
   fif+=[w[1][8:-1].strip()]
   if fif[-1]=='get':
-   init('str gets')
-   init('int geti')
-   init('float getf')
+   init('str','gets')
+   init('int','geti')
+   init('float','getf')
   w[1]=''
  elif [e for e in w[1] if e!=' '][:3] == list('sh('):
   mod+=['stdlib.h']
@@ -572,15 +589,15 @@ for w in q:
    tmpit=w[1].split(' in ')[0].strip()
    tmpar=w[1].split(' in ')[1].strip()
    listvars+=[dict()]
-   init(itype(tmpar)+' '+tmpit)
+   init(itype(tmpar),tmpit)
    w[1]='for('+unp(itype(tmpar))+' '+tmpit+':'+tmpar+')'
    '''
    w[1]=''
    if itype('index_'+tmpit)=='':
-    init('int index_'+tmpit)
+    init('int','index_'+tmpit)
     w[1]+='int index_'+tmpit+';\n'+' '*w[0]
    if itype(tmpit)!=itype(tmpar):
-    init(itype(tmpar)+' '+tmpit)
+    init(itype(tmpar),tmpit)
     w[1]+=itype(tmpar)+' '+tmpit+';\n'+' '*w[0]
    w[1]+='for(index_'+tmpit+'=0,'+tmpit+'='+tmpar+'[index_'+tmpit+'];index_'+tmpit+'<len_'+tmpar+';'+tmpar+'[index_'+tmpit+']='+tmpit+',index_'+tmpit+'++,'+tmpit+'='+tmpar+'[index_'+tmpit+'<len_'+tmpar+'-1?index_'+tmpit+':len_'+tmpar+'-1])'
    '''
@@ -662,7 +679,7 @@ for w in q:
     '''
 
    if itype(it)!=itype(end,1) and itype(end,1):
-    init(itype(end,1)+' '+it)
+    init(itype(end,1),it)
     w[1]=unp(itype(end,1))+' '+it+';\n'+' '*w[0]+w[1]
    #w[1]=ext
  elif w[1][:6] == 'while ' and w[1][-1] == ':':
@@ -723,9 +740,9 @@ for w in q:
   vat=' '.join(w[1].split()[2:])
   tmpvar=vat.split('[')[0]
   tmpcount=vat.split('[')[1].split(']')[0]
-  init(tmptype+' '+tmpvar)
-  init('int len_'+tmpvar.strip())
-  w[1]='int len_'+tmpvar.strip()+'='+tmpcount+';'+tmpouttype +'*'+tmpvar+'=('+tmpouttype+'*)calloc((len_'+tmpvar.strip()+'),sizeof('+tmpouttype+'));'
+  init(tmptype,tmpvar)
+  init('int','len_'+tmpvar.strip())
+  w[1]='int','len_'+tmpvar.strip()+'='+tmpcount+';'+tmpouttype +'*'+tmpvar+'=('+tmpouttype+'*)calloc((len_'+tmpvar.strip()+'),sizeof('+tmpouttype+'));'
  elif [e for e in w[1]][:5] == list('sort('):
   mod+='algorithm functional array iostream iterator'.split()
   uns+=['std']
@@ -733,7 +750,7 @@ for w in q:
   w[1]=w[1][4:].strip()
   tmptype=w[1].split(' ')[0]
   w[1]=' '.join(w[1].split(' ')[1:])
-  init(tmptype+' '+w[1])
+  init(tmptype,w[1])
   w[1]='vector <'+tmptype+'> '+w[1]
   mod+=['vector']
   uns+=['std']
@@ -764,16 +781,20 @@ for w in q:
   vat=' '.join(w[1].split()[2:])
   tmpvar=vat.split('[')[0]
   tmpcount=vat.split('[')[1].split(']')[0]
-  init(tmptype+' '+tmpvar)
-  init('int len_'+tmpvar.strip())
+  init(tmptype,tmpvar)
+  init('int','len_'+tmpvar.strip())
   w[1]='int len_'+tmpvar.strip()+'='+tmpcount+';'+tmpouttype +'*'+tmpvar+'=('+tmpouttype+'*)malloc(sizeof('+tmpouttype+')*(len_'+tmpvar.strip()+'));'
  elif w[1][:3] == 'if ' and w[1][-1] == ':':
   w[1]='if('+w[1][3:-1].replace(' and ',' && ').replace(' or ',' || ').replace(' not ',' ! ')+')'
- elif w[1][:6]=='scan (' or '. read (' in w[1] and itype(w[1]) in ['string','str']:
+ elif w[1][:6]=='scan (' or '. read (' in w[1] and itype(w[1]) in ['string','str','file']:
   sss=0
-  if '. read (' in w[1] and itype(w[1]) in ['string','str']:
+  if '. read (' in w[1] and itype(w[1]) in ['string','str','file']:
    sss=1
    strin=w[1].split(' . read (')[0]
+   if itype(w[1])=='file':
+    mod+=['stdlib.h']
+   else:
+    mod+=['string.h']
   mod+=['stdio.h']
   tmp1=''
   tmp2=''
@@ -781,11 +802,6 @@ for w in q:
   tmp4=''
   w[1]=w[1].split('(',2)[1]
   w[1]=')'.join(w[1].split(')')[:-1])
-  file=bs(w[1],',')[0] if ',' in w[1] else ''
-  if itype(file)=='file':
-   w[1]=','.join(bs(w[1],',')[1:])
-  else:
-   file=''
   for e in bs(w[1],','):
    if len(e.split())>1 and unp(e.split()[0],1):
     tmp3+=unp(e.split()[0])+' '+' '.join(e.split()[1:])+';\n'+' '*w[0]
@@ -823,9 +839,10 @@ for w in q:
      prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m could not scan '+tmptype+' at '+w[1])
      exit(5)
   if sss:
-   w[1]=tmp3+'sscanf('+strin+('.begin()' if itype(strin)=='string' else '')+',"'+tmp1+'"'+tmp2+');'+tmp4
-  elif file:
-   w[1]=tmp3+'fscanf('+file+',"'+tmp1+'"'+tmp2+');'+tmp4
+   if itype(strin)=='file':
+    w[1]=tmp3+'fscanf('+file+',"'+tmp1+'"'+tmp2+');'+tmp4
+   else:
+    w[1]=tmp3+'sscanf('+strin+('.begin()' if itype(strin)=='string' else '')+',"'+tmp1+'"'+tmp2+');'+tmp4
   else:
    w[1]=tmp3+'scanf("'+tmp1+'"'+tmp2+');'+tmp4
  elif w[1][:7]=='print ('or '=' in w[1] and '[' not in w[1].split('=')[0] and itype(w[1]) in ['str','string']:
@@ -925,20 +942,23 @@ for w in q:
    if struop:
     struct[struop][ee]=tmptype
    else:
-    init(tmptype+' '+ee)
+    init(tmptype,ee)
    nw+=e+','
   if tmptype in struct:
    nw=nw
   w[1]=nw[:-1]+';'
  elif node == 0 and '=' in w[1] and set(w[1].split('=')[0].strip()) | set(asym) == set(asym) and itype(w[1].split('=')[0])=='':
-  init(itype(w[1][:-1].split('=')[1])+' '+w[1].split('=')[0])
-  w[1]=unp(itype(w[1][:-1].split('=')[1]))+' '+w[1]
+  tmpty=itype(w[1][:-1].split('=')[1])
+  if not tmpty:
+   #print('\x1b[95m[warning]\x1b[0m unabe to create variable '+w[1].split('=')+' at '+w[1])
+   pass
+  else:
+   init(tmpty,w[1].split('=')[0])
+   w[1]=unp(tmpty)+' '+w[1]
  elif ':=' in w[1]:
   w[1]=w[1].replace(':=','=')
  if w[1]:
-  bou=''.join([e for e in w[1] if e in asym])
-  while bou in w[1]:
-   bou+=str(time())
+  bou=dif(w[1])
   w[1]=w[1].replace(')',bou+')').replace('(','('+bou).split(bou)
   w[1]=[unp(e) if e and e[0] not in '()' and e[-1] not in '()' and unp(e,1) else e for e in w[1]]
   w[1]=''.join(w[1])
