@@ -1,8 +1,4 @@
 #!/usr/bin/env /usr/bin/python3
-def prrint(*a,**s):
- print(*a,**s)
-###############################
-#prrint('\x1b[93m[compiling \x1b[93;5m...\x1b]\x1b[0m',end='\r')
 from sys import argv
 from os import system as sh
 from os import popen as pp
@@ -16,7 +12,7 @@ mod=[]
 uns=[]
 fif=[]
 com=[]
-gcomp='g++ {}'
+gcomp='g++ -Wall -Wextra {}'
 asym='qazwsxedcrfvtgbyhnujmikolp_QAZWSXEDCRFVTGBYHNUJMIKOLP0192837465'
 quo=0
 struct=dict()
@@ -54,42 +50,30 @@ compiles always to outcode.cpp then to a.out
 args can be:
 -c	compile to .cpp and exit
 -r	decompile .cpp file
--u	create readable .cpp file, cannot be decompiled
+-u	create readable .cpp file that cannot be decompiled
 -d	makes .cpp code dirty and unreadable, can be used for creating encrypted code, but in case of using without -u file can be decompiled and read
 -b	in case of error displays only first 256 symbols of error msg
 -e	show exit code
 -s	make int smaller
+-a	compile to binary a.out file without running it
+-f	don't stop at warnings
 args cannot be joined, for example use -b -c instead of -bc
 running without args will compile and run
 '''
-###############################
-exitcode=0
-if '-e' in argv:
- exitcode=1
- argv=[w for w in argv if w != '-e']
-###############################
-smint=0
-if '-s' in argv:
- smint=1
- argv=[w for w in argv if w != '-s']
-###############################
-unhack=1
-if '-d' in argv:
- unhack=0
- argv=[w for w in argv if w != '-d']
-###############################
-if '-h' in argv:
- argv=[w for w in argv if w != '-h']
- print(hm)
- exit()
-###############################
-if '-help' in argv:
- argv=[w for w in argv if w != '-help']
- print(hm)
- exit()
-###############################
-if '--help' in argv:
- argv=[w for w in argv if w != '--help']
+garg=[w[1:] for w in argv if w and w[0]=='-']
+argv=[w for w in argv if w and w[0]!='-']
+darg={'e':'exitcode','s':'smint','d':'unhack','h':'hmn','help':'hmn','-help':'hmn','u':'uncom','b':'brief','brtg':'brtg','node':'node','c':'unrun','r':'restore','f':'force','a':'bin'}
+for w in darg:
+ exec(darg[w]+'=0')
+for w in garg:
+ if w in darg:
+  exec(darg[w]+'=1')
+ else:
+  warn('uncnown option -'+w)
+unhack=1-unhack
+uncom=1-uncom
+unrun=1-unrun
+if hmn:
  print(hm)
  exit()
 ###############################
@@ -108,35 +92,11 @@ if '-gcc' in argv:
    if 'L' in io[w]:
     io[w]=io[w].replace('L','ll')
 ###############################
-uncom=1
-if '-u' in argv:
- argv=[w for w in argv if w!='-u']
- uncom=0
-###############################
-brief=0
-if '-b' in argv:
- argv=[w for w in argv if w!='-b']
- brief=1
-###############################
-brtg=0
-if '-brtg' in argv:
- argv=[w for w in argv if w!='-brtg']
- brtg=1
-###############################
-node=0
-if '-node' in argv:
- argv=[w for w in argv if w!='-node']
- node=1
-###############################
-unrun=1
-if '-c' in argv:
- argv=[w for w in argv if w != '-c']
- unrun=0
-###############################
-restore=0
-if '-r' in argv:
- argv=[w for w in argv if w!= '-restore']
- restore=1
+def warn(*q,**w):
+ print('\x1b[1;95m[warning]\x1b[0m',*q,**w)
+ global force
+ if force==0:
+  exit(1)
 ###############################
 def dif(q):
  global asym
@@ -296,8 +256,8 @@ def gio(q):
   q[1]='int'
  q[0]=''.join(q[0])
  if q[1]=='auto':
-  print('\x1b[91m[error]\x1b[0m unable to print type auto')
-  exit()
+  warn('unable to print type auto')
+  q[1]='int'
  return io[q[0]+q[1]]
 ###############################
 def init(type,q=None):
@@ -305,16 +265,18 @@ def init(type,q=None):
  if node:
   return ['',type+' '+q]
  if q==None:
-  type=q
+  q=type
   q=' '.join(q.split())
   q=q.split(' ',1)
   if len(q)==1:
-   print('\x1b[95m[warning]\x1b[0m var '+q[0]+'is uncreated')
-   return ['',q[0]]
+   q+=['']
   if len(q)==0:
-   print('\x1b[95m[warning]\x1b[0m internall error')
+   warn('internall error')
    return ['','']
   type,q=q
+ if not type:
+  warn('var '+q[0]+' is uncreated')
+  return ['',q[0]]
  q=q.strip()
  q=' '.join(q.split())
  type=type.strip()
@@ -330,12 +292,12 @@ def init(type,q=None):
  return [type,name]
 ###############################
 if not (argv):
- print('and what file should I compile? run with -h for help')
- exit(1)
+ warn('and what file should I compile? run with -h for help')
+ argv+=[pp('ls -t').read().split('\n')[0]]
 ###############################
 if not(exists(argv[0])):
- prrint('\x1b[91m[error]\x1b[0m Could not find '+argv[0])
- exit(2)
+ warn('Could not find '+argv[0])
+ argv+=[pp('ls -t').read().split('\n')[0]]
 ###############################
 a=open(argv[0])
 q=a.read()
@@ -349,7 +311,6 @@ if restore:
  q=''.join(q)
  a.write(unhexlify(q.encode()).decode())
  a.close()
- exit()
 ##############################
 q+='\npass\n'
 ##############################
@@ -827,6 +788,8 @@ for w in q:
    else:
     tmptype=e.split('[')[0].strip().replace('*','').strip()
     deffo=itype(tmptype)
+    if force and not deffo:
+     deffo='llint'
     if deffo:
      tmp1+='%'+gio(deffo)
      cadd=add
@@ -836,8 +799,7 @@ for w in q:
       cadd=1-cadd
      tmp2+=','+'&('*cadd+e.strip()+('.begin()' if deffo=='string' else '')+')'*cadd
     else:
-     prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m could not scan '+tmptype+' at '+w[1])
-     exit(5)
+     warn('could not scan '+tmptype+' at '+w[1])
   if sss:
    if itype(strin)=='file':
     w[1]=tmp3+'fscanf('+file+',"'+tmp1+'"'+tmp2+');'+tmp4
@@ -893,12 +855,13 @@ for w in q:
    else:
     tmptype=e.split('[')[0].strip().replace('*','')
     deffo=itype(tmptype,s=1)
+    if force and not deffo:
+     deffo='llint'
     if deffo:
      tmp1+=['%'+gio(deffo)]
      tmp2+=','+e.strip()+('.begin()' if deffo=='string' else '')
     else:
-     prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m could not print '+tmptype+' at '+w[1])
-     exit(6)
+     warn('could not print '+tmptype+' at '+w[1])
   if sss and itype(strin)=='string':
    tmp4+=strin+'='+strin+'.c_str();'
   if sss:
@@ -908,7 +871,7 @@ for w in q:
   else:
    w[1]='printf("'+sep.join(tmp1)+end+'"'+tmp2+');'+tmp4
   if 'printlimit' in debug:
-   w[1]+='debug_printlimit--;if (debug_printlimit < 0) {printf("\033[31m[debug_printlimit]\033[0m\\n");return 0;}'
+   w[1]+='debug_printlimit--;if (debug_printlimit <= 0) {printf("\033[1;91m[debug_printlimit]\033[0m\\n");auto debug_printlimit=((int*)(0))[-1];}'
  elif w[1][:4] == 'def ' and w[1][-1] == ':':
   w[1]=w[1][4:-1]
   if len(w[1].split('(')[0].split())<2:
@@ -949,18 +912,14 @@ for w in q:
   w[1]=nw[:-1]+';'
  elif node == 0 and '=' in w[1] and set(w[1].split('=')[0].strip()) | set(asym) == set(asym) and itype(w[1].split('=')[0])=='':
   tmpty=itype(w[1][:-1].split('=')[1])
-  if not tmpty:
-   #print('\x1b[95m[warning]\x1b[0m unabe to create variable '+w[1].split('=')+' at '+w[1])
-   pass
-  else:
-   init(tmpty,w[1].split('=')[0])
-   w[1]=unp(tmpty)+' '+w[1]
+  init(tmpty,w[1].split('=')[0])
+  w[1]=unp(tmpty)+' '+w[1]
  elif ':=' in w[1]:
   w[1]=w[1].replace(':=','=')
  if w[1]:
   bou=dif(w[1])
   w[1]=w[1].replace(')',bou+')').replace('(','('+bou).split(bou)
-  w[1]=[unp(e) if e and e[0] not in '()' and e[-1] not in '()' and unp(e,1) else e for e in w[1]]
+  w[1]=[unp(e)+('*' if '*' in e else ' ') if e and e[0] not in '()' and e[-1] not in '()' and unp(e,1) else e for e in w[1]]
   w[1]=''.join(w[1])
 ###############################
 q+=[[0,'','']]
@@ -1046,20 +1005,20 @@ a.close()
 if unrun:
  if brief:
   qq=sh('(g++ outcode.cpp 2>&1) > out__tmp____')
-  qqq=open('out__tmp____').read()
+  qqq=open('out__tmp____').read()[:256]+'\x1b[0m'
   sh('rm out__tmp____')
-  if qq:
-   print(qqq[:256])
-   exit()
  else:
-  if sh(gcomp.format('outcode.cpp')):
-   exit()
+  qq=sh(gcomp.format('outcode.cpp'))
+ if qq:
+  warn('internal error')
+  exit(qq)
  try:
-  q=sh('./a.out')
+  if bin==0:
+   q=sh('./a.out')
  except KeyboardInterrupt:
   if exitcode==0:
    print()
  else:
   if exitcode:
-   prrint('\x1b[93m[exit code: '+str(q)+']\x1b[0m')
+   print('\x1b[1;93m[exit code: '+str(q)+']\x1b[0m')
   exit(q)
