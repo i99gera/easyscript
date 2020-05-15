@@ -7,7 +7,8 @@ from random import randint
 from random import choice
 from binascii import hexlify
 from binascii import unhexlify
-msym=65536
+#msym=65536
+msym=256
 mod=[]
 uns=[]
 fif=[]
@@ -239,7 +240,7 @@ def unp(q,ww=0,m=0):
  a=typesplit(q)
  be,en=a
  if en == 'file':
-  en='FILE'
+  en='FILE*'
   mod+=['stdlib.h']
  if en == 'str':
   en='char'
@@ -333,6 +334,8 @@ if restore:
  q=''.join(q)
  a.write(unhexlify(q.encode()).decode())
  a.close()
+##############################
+q=''.join([w if ord(w)<msym else ''.join(['\\'+hex(e)[1:] for e in w.encode()]) for w in q])
 ##############################
 q+='\npass\n'
 ##############################
@@ -829,7 +832,7 @@ for w in q:
     w[1]=tmp3+'sscanf('+strin+('.begin()' if itype(strin)=='string' else '')+',"'+tmp1+'"'+tmp2+');'+tmp4
   else:
    w[1]=tmp3+'scanf("'+tmp1+'"'+tmp2+');'+tmp4
- elif w[1][:7]=='print ('or '=' in w[1] and '[' not in w[1].split('=')[0] and itype(w[1]) in ['str','string']:
+ elif w[1][:7]=='print ('or '=' in w[1] and '[' not in w[1].split('=')[0] and itype(w[1]) in ['str','string'] or '. write (' in w[1] and itype(w[1]) in ['file']:
   sss=0
   if itype(w[1]) in ['str','string']:
    sss=1
@@ -843,13 +846,12 @@ for w in q:
   if sss==0:
    sep=' '
    end='\\n'
-   w[1]='('.join(w[1].split('(')[1:])
-   w[1]=')'.join(w[1].split(')')[:-1])
-   file=bs(w[1],',')[0]
-   if '.' not in file and itype(file)=='file':
-    w[1]=','.join(bs(w[1],',')[1:])
+   if '. write (' in w[1] and itype(w[1]) in ['file']:
+    file=w[1].split('. write (')[0]
    else:
     file=''
+   w[1]='('.join(w[1].split('(')[1:])
+   w[1]=')'.join(w[1].split(')')[:-1])
   else:
    sep=''
    end=''
