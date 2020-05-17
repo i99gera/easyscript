@@ -40,6 +40,7 @@ io={
 struop=''
 struos=0
 debug=dict()
+errness=0
 casebr=1
 argv =argv[1:]
 listvars=[dict()]
@@ -94,11 +95,16 @@ if '-gcc' in argv:
     io[w]=io[w].replace('L','ll')
 ###############################
 def warn(*q,**w):
+ global errness
  cont=0
  if 'cont' in w:
   cont=1
   del(w['cont'])
- print('\x1b[1;95m[warning]\x1b[0m',*q,**w)
+ if errness:
+  global w
+  print('\x1b[1;95m[warning line '+str(w[3])+']\x1b[0m',*q,**w)
+ else:
+  print('\x1b[1;95m[warning]\x1b[0m',*q,**w)
  global force
  if force==0 and cont==0:
   exit(1)
@@ -426,6 +432,7 @@ while q:
 q=nq
 ###############################
 q=q.replace('\t',' ')
+q=q.replace('\\\n',' ')
 ###############################
 nq=''
 while len(q)>1:
@@ -450,8 +457,11 @@ q=q.replace(';','\n')
 q=q.split('\n')
 ###############################
 q=[w for w in q if w != ' '*len(w)]
-q=[[0,w,''] for w in q]
+q=[[0,w,'',0] for w in q]
+linnum=0
 for w in q:
+ w[3]=linnum
+ linnum+=1
  while w[1][0] == ' ':
   w[1]=w[1][1:]
   w[0]+=1
@@ -504,6 +514,7 @@ if node==0:
 ###############################
 #start#
 ###############################
+errness=1
 linow=-1
 switch=[]
 for w in q:
@@ -1010,7 +1021,7 @@ long double getf(char *a){long double q;sscanf(a,"%Lf",&q);return q;}
   mod+=['stdlib.h','time.h']
  if w=='mmd':
   mods+='#define min(a,b) ((a)<(b)?(a):(b))\n'
-  mods+='#define min(a,b) ((a)<(b)?(b):(a))\n'
+  mods+='#define max(a,b) ((a)<(b)?(b):(a))\n'
 rmods=''
 mod=list(set(mod))
 for w in mod:
