@@ -1008,6 +1008,9 @@ long double getf(char *a){long double q;sscanf(a,"%Lf",&q);return q;}
  if w=='rand':
   mmods+='\nsrand(time(NULL));'
   mod+=['stdlib.h','time.h']
+ if w=='mmd':
+  mods+='#define min(a,b) ((a)<(b)?(a):(b))\n'
+  mods+='#define min(a,b) ((a)<(b)?(b):(a))\n'
 rmods=''
 mod=list(set(mod))
 for w in mod:
