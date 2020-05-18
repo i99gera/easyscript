@@ -277,7 +277,7 @@ def unp(q,ww=0,m=0):
   return toex+en
  return q
 ###############################
-def gio(q):
+def gio(q,c=0):
  q=typesplit(q)
  q[0]=[w for w in q[0] if w in 'lLuhH']
  q[0]=sorted(q[0])
@@ -285,8 +285,11 @@ def gio(q):
   q[1]='int'
  q[0]=''.join(q[0])
  if q[1]=='auto':
-  warn('unable to print type auto')
-  q[1]='int'
+  if c:
+   warn('unable to print type auto',cont=1)
+  else:
+   warn('unable to print type auto')
+  q[1]='llint'
  return io[q[0]+q[1]]
 ###############################
 def init(type,q=None):
@@ -298,20 +301,22 @@ def init(type,q=None):
   q=' '.join(q.split())
   q=q.split(' ',1)
   if len(q)==1:
-   q+=['']
+   q=['']+q
   if len(q)==0:
    warn('internall error')
    return ['','']
   type,q=q
  if not type:
-  warn('var '+q+' is uncreated')
-  return ['',q[0]]
+  warn('failed to create var '+q)
+  return ['',q]
  q=q.strip()
  q=' '.join(q.split())
  type=type.strip()
 # type,q=q.split(' ',1)
  q=q.strip()
- name=q.split('[')[0].split('(')[0].replace('*','').strip()
+ name=q.split('[')[0].split('(')[0].strip()
+ if name[0]=='*':
+  name=name[1:].strip()
  if typesplit(type)[1]=='int' and smint==0 and name!='main':
   type='llint'
  if typesplit(type)[1]=='float' and smint==0:
@@ -915,9 +920,23 @@ for w in q:
    else:
     w[1]='auto '+w[1]
   nw=init(w[1].split('(')[0])
+  if struct:
+   rep={'__init__':list(struct.keys())[-1],'__del__':'~'+list(struct.keys())[-1]}
+  else:
+   rep=dict()
+  rep1={'add':'+','sub':'-','mul':'*','div':'/','mod':'%','lshift':'<<','rshift':'>>','call':'()','sqcall':'[]','dot':'.','eq':'==','set':'=','band':'&','bxor':'^','bor':'|','land':'&&','lor':'||','inc':'++','dec':'--'}
+  for e in rep1:
+   rep['__'+e+'__']='operator'+rep1[e]
+   rep['__self__'+e+'__']='operator'+rep1[e]+'='
   listvars+=[dict()]
-  nw=unp(nw[0],m=nw[1])+' '+nw[1]+'('
+  if nw[1] in rep:
+   nw[1]=rep[nw[1]]
+  nwt=nw[1]
+  nw=unp(nw[0],m=nw[1])
+  nwlt=[]
   nwl=[]
+  nwto=[]
+  nwlw=[]
   for e in bs(w[1].split('(')[1].split(')')[0],','):
    if e != ' '*len(e):
     e=e.split('=')
@@ -926,8 +945,15 @@ for w in q:
      if node==0:
       e='auto '+e
     tmp=init(e)
+    nwlt+=[[tmp[0],'='.join([tmp[1]]+ewe)]]
     nwl+=[unp(tmp[0])+' '+'='.join([tmp[1]]+ewe)]
-  w[1]=nw+','.join(nwl)+')'
+    nwlw+=[unp(tmp[0])+' '+tmp[1]]
+    nwto+=[tmp[1]]
+  if 'recursionshow' in debug:
+   mod+=['stdio.h']
+   w[1]=nw+' '+'_'+nwt+'('+','.join(nwl)+');'+nw+' '+nwt+'('+','.join(nwl)+'){int ___;for(___=0;___<debug_recursionshow;___++){printf(" ");}printf("'+nwt+'('+' '.join(['%'+gio(e[0],1) for e in nwlt])+')\\n"'+' '.join([','+e for e in nwto])+');debug_recursionshow++;'+('debug_printlimit--;if (debug_printlimit <= 0) {printf("\033[1;91m[debug_printlimit]\033[0m\\n");auto debug_printlimit=((int*)(0))[-1];printf("%'+gio(itype('debug_printlimit'))+'",debug_printlimit);}' if 'printlimit' in debug else ' ')+'auto ____=_'+nwt+'('+','.join([e for e in nwto])+');debug_recursionshow--;return ____;}'+nw+' _'+nwt+'('+','.join(nwlw)+')'
+  else:
+   w[1]=nw+' '+nwt+'('+','.join(nwl)+')'
  elif w[1][:7] == 'struct ' and w[1][-1]==':':
   struop=w[1][7:-1].strip()
   struct[struop]=dict()
@@ -958,6 +984,7 @@ for w in q:
   w[1]=w[1].replace(')',bou+')').replace('(','('+bou).split(bou)
   w[1]=[unp(e)+('*' if '*' in e else ' ') if e and e[0] not in '()' and e[-1] not in '()' and unp(e,1) else e for e in w[1]]
   w[1]=''.join(w[1])
+errness=0
 ###############################
 q+=[[0,'','']]
 struop=-1
