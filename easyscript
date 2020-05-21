@@ -13,7 +13,7 @@ mod=[]
 uns=[]
 fif=[]
 com=[]
-gcomp='g++ -Wall -Wextra {}'
+gcomp='g++ -Wall -Wextra -Ofast {}'
 asym='qazwsxedcrfvtgbyhnujmikolp_QAZWSXEDCRFVTGBYHNUJMIKOLP0192837465'
 quo=0
 struct=dict()
@@ -286,9 +286,9 @@ def gio(q,c=0):
  q[0]=''.join(q[0])
  if q[1]=='auto':
   if c:
-   warn('unable to print type auto',cont=1)
+   warn('unknown type auto',cont=1)
   else:
-   warn('unable to print type auto')
+   warn('unknown type auto')
   q[1]='llint'
  return io[q[0]+q[1]]
 ###############################
@@ -324,6 +324,56 @@ def init(type,q=None):
  global listvars
  listvars[-1][name]=type
  return [type,name]
+###############################
+def form(a,s,sep,end):
+ global mod
+ mod+=['stdio.h']
+ sf=[]
+ vl=''
+ bef=''
+ aft=''
+ for w in a:
+  if w.count('=')==1 and w.split('=')[0].strip()=='sep' and w.split('=')[1].strip() and w.split('=')[1].strip()[0] in '\'"' and w.split('=')[1].strip()[-1] in '\'"':
+   sep=w.split('=').strip()[1:-1]
+   continue
+  if w.count('=')==1 and w.split('=')[0].strip()=='end' and w.split('=')[1].strip() and w.split('=')[1].strip()[0] in '\'"' and w.split('=')[1].strip()[-1] in '\'"':
+   end=w.split('=').strip()[1:-1]
+   continue
+  w=w.strip()
+  f=''
+  if '`' in w:
+   w,f=w.split('`')
+  if w[0]==w[-1] and w[0] in '"\'':
+   sf+=[w[1:-1]]
+  else:
+   if len(w.strip())>1:
+    type,w=init(w)
+    bef+=unp(type)+' '+w+';\n'
+   else:
+    type=itype(w)
+   if not(f):
+    f=gio(type)
+   sf+=['%'+f]
+   if type in struct:
+    rnd='_'
+    for eeee in range(32):
+     rnd+=choice(asym)
+    bef='char* '+rnd+'='+w+'.__print__();\n'
+    vl+=','+rnd
+    mod+=['stdlib.h']
+    aft+='free('+rnd+');\n'
+   elif type=='string':
+    mod+=['string']
+    vl+=','+w+'.begin()'
+    aft+=w+'='+w+'.c_str();\n'
+   elif type=='str':
+    mod+=['string.h']
+    vl+=','+w
+   elif s==0:
+    vl+=','+w
+   else:
+    vl+=',&('+w+')'
+ return [bef,sep.join(sf)+end,vl,aft]
 ###############################
 if not (argv):
  argv+=[last()]
@@ -504,13 +554,13 @@ if node==0:
   if w[1][:4] == 'def ':
    inmain=0
   if w[1]== 'global :':
-   inmain=2
+   inmain=0
    w[1]=''
+  if w[1][:7] == 'struct ':
+   inmain=0
   if inmain==1:
    main+=[w[:]]
    w[1]=''
-  if inmain==2:
-   w[0]-=1
  q=[w for w in q if w[1] != '']
  q+=[[0,'def int main ( ) :','']]
  for w in main:
@@ -789,6 +839,7 @@ for w in q:
  elif w[1][:3] == 'if ' and w[1][-1] == ':':
   w[1]='if('+w[1][3:-1].replace(' and ',' && ').replace(' or ',' || ').replace(' not ',' ! ')+')'
  elif w[1][:6]=='scan (' or '. read (' in w[1] and itype(w[1]) in ['string','str','file']:
+  varray=[]
   sss=0
   if '. read (' in w[1] and itype(w[1]) in ['string','str','file']:
    sss=1
@@ -798,12 +849,14 @@ for w in q:
    else:
     mod+=['string.h']
   mod+=['stdio.h']
-  tmp1=''
-  tmp2=''
-  tmp3=''
-  tmp4=''
+#  tmp1=''
+#  tmp2=''
+#  tmp3=''
+#  tmp4=''
   w[1]=w[1].split('(',2)[1]
   w[1]=')'.join(w[1].split(')')[:-1])
+  bef,sf,vl,aft=form(bs(w[1],','),1,'','')
+  '''
   for e in bs(w[1],','):
    if len(e.split())>1 and unp(e.split()[0],1):
     tmp3+=unp(e.split()[0])+' '+' '.join(e.split()[1:])+';\n'+' '*w[0]
@@ -841,13 +894,14 @@ for w in q:
      tmp2+=','+'&('*cadd+e.strip()+('.begin()' if deffo=='string' else '')+')'*cadd
     else:
      warn('could not scan '+tmptype+' at '+w[1])
+  '''
   if sss:
    if itype(strin)=='file':
-    w[1]=tmp3+'fscanf('+file+',"'+tmp1+'"'+tmp2+');'+tmp4
+    w[1]=bef+'fscanf('+file+',"'+sf+'"'+vl+');'+aft
    else:
-    w[1]=tmp3+'sscanf('+strin+('.begin()' if itype(strin)=='string' else '')+',"'+tmp1+'"'+tmp2+');'+tmp4
+    w[1]=bef+'sscanf('+strin+('.begin()' if itype(strin)=='string' else ' ')+',"'+sf+'"'+vl+');'+aft
   else:
-   w[1]=tmp3+'scanf("'+tmp1+'"'+tmp2+');'+tmp4
+   w[1]=bef+'scanf("'+sf+'"'+vl+');'+aft
  elif w[1][:7]=='print ('or '=' in w[1] and '[' not in w[1].split('=')[0] and itype(w[1]) in ['str','string'] or '. write (' in w[1] and itype(w[1]) in ['file']:
   sss=0
   if itype(w[1]) in ['str','string']:
@@ -877,6 +931,8 @@ for w in q:
    if sss==2:
     w[1]=strin+'+'+w[1]
    w[1]=w[1][:-1]
+  [bef,sf,vl,aft]=form(bs(w[1],'+' if sss else ','),0,sep,end)
+  '''
   for e in bs(w[1],'+' if sss else ','):
    e=e.strip()
    if e=='':
@@ -902,14 +958,15 @@ for w in q:
      tmp2+=','+e.strip()+('.begin()' if deffo=='string' else '')
     else:
      warn('could not print '+tmptype+' at '+w[1])
+  '''
   if sss and itype(strin)=='string':
-   tmp4+=strin+'='+strin+'.c_str();'
+   aft+=strin+'='+strin+'.c_str();'
   if sss:
-   w[1]='sprintf('+strin+('.begin()' if itype(strin)=='string' else '')+',"'+sep.join(tmp1)+end+'"'+tmp2+');'+tmp4
+   w[1]=bef+'sprintf('+strin+('.begin()' if itype(strin)=='string' else '')+',"'+sf+'"'+vl+');'+aft
   elif file:
-   w[1]='fprintf('+file+',"'+sep.join(tmp1)+end+'"'+tmp2+');'+tmp4
+   w[1]=bef+'fprintf('+file+',"'+sf+'"'+vl+');'+aft
   else:
-   w[1]='printf("'+sep.join(tmp1)+end+'"'+tmp2+');'+tmp4
+   w[1]=bef+'printf("'+sf+'"'+vl+');'+aft
   if 'printlimit' in debug:
    w[1]+='debug_printlimit--;if (debug_printlimit <= 0) {printf("\033[1;91m[debug_printlimit]\033[0m\\n");auto debug_printlimit=((int*)(0))[-1];printf("%'+gio(itype('debug_printlimit'))+'",debug_printlimit);}'
  elif w[1][:4] == 'def ' and w[1][-1] == ':':
@@ -929,6 +986,8 @@ for w in q:
    rep['__'+e+'__']='operator'+rep1[e]
    rep['__self__'+e+'__']='operator'+rep1[e]+'='
   listvars+=[dict()]
+  if nw[1] in ['__init__','__del__']:
+   nw[0]=''
   if nw[1] in rep:
    nw[1]=rep[nw[1]]
   nwt=nw[1]
@@ -951,7 +1010,8 @@ for w in q:
     nwto+=[tmp[1]]
   if 'recursionshow' in debug:
    mod+=['stdio.h']
-   w[1]=nw+' '+'_'+nwt+'('+','.join(nwl)+');'+nw+' '+nwt+'('+','.join(nwl)+'){int ___;for(___=0;___<debug_recursionshow;___++){printf(" ");}printf("'+nwt+'('+' '.join(['%'+gio(e[0],1) for e in nwlt])+')\\n"'+' '.join([','+e for e in nwto])+');debug_recursionshow++;'+('debug_printlimit--;if (debug_printlimit <= 0) {printf("\033[1;91m[debug_printlimit]\033[0m\\n");auto debug_printlimit=((int*)(0))[-1];printf("%'+gio(itype('debug_printlimit'))+'",debug_printlimit);}' if 'printlimit' in debug else ' ')+'auto ____=_'+nwt+'('+','.join([e for e in nwto])+');debug_recursionshow--;return ____;}'+nw+' _'+nwt+'('+','.join(nwlw)+')'
+   bef,sf,vl,aft=form(nwto,0,' ','\n')
+   w[1]=nw+' '+'_'+nwt+'('+','.join(nwl)+');'+nw+' '+nwt+'('+','.join(nwl)+'){int ___;for(___=0;___<debug_recursionshow;___++){printf(" ");}'+bef+'printf("'+nwt+'('+sf+')"'+vl+');'+aft+'debug_recursionshow++;'+('debug_printlimit--;if (debug_printlimit <= 0) {printf("\033[1;91m[debug_printlimit]\033[0m\\n");auto debug_printlimit=((int*)(0))[-1];printf("%'+gio(itype('debug_printlimit'))+'",debug_printlimit);}' if 'printlimit' in debug else ' ')+'auto ____=_'+nwt+'('+','.join([e for e in nwto])+');debug_recursionshow--;return ____;}'+nw+' _'+nwt+'('+','.join(nwlw)+')'
   else:
    w[1]=nw+' '+nwt+'('+','.join(nwl)+')'
  elif w[1][:7] == 'struct ' and w[1][-1]==':':
@@ -967,11 +1027,8 @@ for w in q:
    ee=e.split('=')[0]
    if struop:
     struct[struop][ee]=tmptype
-   else:
-    init(tmptype,ee)
+   init(tmptype,ee)
    nw+=e+','
-  if tmptype in struct:
-   nw=nw
   w[1]=nw[:-1]+';'
  elif node == 0 and '=' in w[1] and set(w[1].split('=')[0].strip()) | set(asym) == set(asym) and itype(w[1].split('=')[0])=='':
   tmpty=itype(w[1][:-1].split('=')[1])
