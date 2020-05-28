@@ -13,6 +13,7 @@ from sys import argv
 open=open1
 q='/'.join(abspath(argv[0]).split('/')[:-1])+'/'
 system('echo "alias esc='+q+'easyscript" >> ~/.bashrc')
+print('\x1b[1;92m[completed]\x1b[0m')
 print('run the following commmand to complete the installation')
 print('source ~/.bashrc')
 print('type esc -h for help when installed')

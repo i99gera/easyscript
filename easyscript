@@ -79,21 +79,6 @@ if hmn:
  print(hm)
  exit()
 ###############################
-if '-gcc' in argv:
- argv=[w for w in argv if w not in '-gcc']
- q=pp('gcc --version').read()
- q=q.split()
- if len(q) > 2:
-  q=q[2]
- else:
-  q=q[0]
- q=q.split('.')[0]
- q=int(q)
- if q<10:
-  for w in io.keys():
-   if 'L' in io[w]:
-    io[w]=io[w].replace('L','ll')
-###############################
 def warn(*q,**e):
  global errness
  cont=0
