@@ -279,6 +279,12 @@ def gio(q,c=0):
   else:
    warn('unknown type auto')
   q[1]='llint'
+ if q[0]+q[1]=='':
+  warn('something is really wrong with io')
+ if q[0]+q[1] not in io:
+  warn('hard to print '+q[0]+q[1])
+  q[0]='ll'
+  q[1]='int'
  return io[q[0]+q[1]]
 ###############################
 def init(type,q=None):
@@ -297,14 +303,15 @@ def init(type,q=None):
   type,q=q
  if not type:
   warn('failed to create var '+q)
-  return ['',q]
+  return ['auto',q]
  q=q.strip()
  q=' '.join(q.split())
  type=type.strip()
 # type,q=q.split(' ',1)
  q=q.strip()
  name=q.split('[')[0].split('(')[0].strip()
- if name[0]=='*':
+ sname=name
+ if name[:1]=='*':
   name=name[1:].strip()
  if typesplit(type)[1]=='int' and smint==0 and name!='main':
   type='llint'
@@ -312,9 +319,11 @@ def init(type,q=None):
   type='llfloat'
  global listvars
  listvars[-1][name]=type
- return [type,name]
+ return [type,sname]
 ###############################
 def form(a,s,sep,end):
+ a=[w.strip() for w in a]
+ a=[w for w in a if w]
  global mod
  mod+=['stdio.h']
  sf=[]
@@ -323,10 +332,10 @@ def form(a,s,sep,end):
  aft=''
  for w in a:
   if w.count('=')==1 and w.split('=')[0].strip()=='sep' and w.split('=')[1].strip() and w.split('=')[1].strip()[0] in '\'"' and w.split('=')[1].strip()[-1] in '\'"':
-   sep=w.split('=').strip()[1:-1]
+   sep=w.split('=')[1].strip()[1:-1]
    continue
   if w.count('=')==1 and w.split('=')[0].strip()=='end' and w.split('=')[1].strip() and w.split('=')[1].strip()[0] in '\'"' and w.split('=')[1].strip()[-1] in '\'"':
-   end=w.split('=').strip()[1:-1]
+   end=w.split('=')[1].strip()[1:-1]
    continue
   w=w.strip()
   f=''
@@ -828,7 +837,7 @@ for w in q:
   w[1]='int len_'+tmpvar.strip()+'='+tmpcount+';'+tmpouttype +'*'+tmpvar+'=('+tmpouttype+'*)malloc(sizeof('+tmpouttype+')*(len_'+tmpvar.strip()+'));'
  elif w[1][:3] == 'if ' and w[1][-1] == ':':
   w[1]='if('+w[1][3:-1].replace(' and ',' && ').replace(' or ',' || ').replace(' not ',' ! ')+')'
- elif w[1][:6]=='gscan (':
+ elif w[1][:7]=='gscan (':
   mod+=['stdio.h']
   fif+=['fi']
   w[1]=w[1].split('(')[1].split(')')[0]
@@ -861,7 +870,7 @@ if(___input1___==45)
 '''
   w[1]=ex
 #}}}}}}}}}}}]]]]]]]]]]]]]]])))))))))))
- elif w[1][:7]=='scan (' or '. read (' in w[1] and itype(w[1]) in ['string','str','file']:
+ elif w[1][:6]=='scan (' or '. read (' in w[1] and itype(w[1]) in ['string','str','file']:
   varray=[]
   sss=0
   if '. read (' in w[1] and itype(w[1]) in ['string','str','file']:
@@ -928,7 +937,7 @@ if(___input1___==45)
     w[1]=bef+'sscanf('+strin+('.begin()' if itype(strin)=='string' else ' ')+',"'+sf+'"'+vl+');'+aft
   else:
    w[1]=bef+'scanf("'+sf+'"'+vl+');'+aft
- elif w[1][:7]=='gprint (':
+ elif w[1][:8]=='gprint (':
   fif+=['fo']
   mod+=['stdio.h']
   w[1]=w[1].split('(')[1].split(')')[0]
@@ -967,7 +976,7 @@ if(___input1___==45)
    if sep:
     ex+='putchar_fast(32);'
   w[1]=ex+('putchar_fast(10);'if end else '')
- elif w[1][:8]=='print ('or '=' in w[1] and '[' not in w[1].split('=')[0] and itype(w[1]) in ['str','string'] or '. write (' in w[1] and itype(w[1]) in ['file']:
+ elif w[1][:7]=='print ('or '=' in w[1] and '[' not in w[1].split('=')[0] and itype(w[1]) in ['str','string'] or '. write (' in w[1] and itype(w[1]) in ['file']:
   sss=0
   if itype(w[1]) in ['str','string']:
    sss=1
@@ -1189,6 +1198,8 @@ q=rmods+mods+q
 q=q.replace('int main(){\n','int main(){\n'+mmods)
 ###############################
 q=''.join([chr(ord(w)%msym) for w in q])
+###############################
+q='#pragma GCC optimize("Ofast")\n'+q
 ###############################
 ort=hexlify(ort.encode()).decode()
 if node:
