@@ -1,21 +1,19 @@
 #!/usr/bin/env /usr/bin/python3
-def prrint(*a,**s):
- print(*a,**s)
-###############################
-#prrint('\x1b[93m[compiling \x1b[93;5m...\x1b]\x1b[0m',end='\r')
 from sys import argv
 from os import system as sh
 from os import popen as pp
 from os.path import exists
 from random import randint
+from random import choice
 from binascii import hexlify
 from binascii import unhexlify
-from time import time
 msym=65536
+#msym=256
 mod=[]
 uns=[]
 fif=[]
 com=[]
+gcomp='g++ -Wall -Wextra -Ofast {}'
 asym='qazwsxedcrfvtgbyhnujmikolp_QAZWSXEDCRFVTGBYHNUJMIKOLP0192837465'
 quo=0
 struct=dict()
@@ -28,6 +26,8 @@ io={
  'lint':'li',
  'llint':'Li',
  'float':'f',
+ 'lfloat':'lf',
+ 'llfloat':'Lf',
  'double':'lf',
  'ldouble':'Lf',
  'char':'c',
@@ -40,6 +40,7 @@ io={
 struop=''
 struos=0
 debug=dict()
+errness=0
 casebr=1
 argv =argv[1:]
 listvars=[dict()]
@@ -51,125 +52,129 @@ compiles always to outcode.cpp then to a.out
 args can be:
 -c	compile to .cpp and exit
 -r	decompile .cpp file
--u	create readable .cpp file, cannot be decompiled
+-u	create readable .cpp file that cannot be decompiled
 -d	makes .cpp code dirty and unreadable, can be used for creating encrypted code, but in case of using without -u file can be decompiled and read
 -b	in case of error displays only first 256 symbols of error msg
 -e	show exit code
 -s	make int smaller
+-a	compile to binary a.out file without running it
+-f	don't stop at warnings
 args cannot be joined, for example use -b -c instead of -bc
 running without args will compile and run
 '''
-###############################
-exitcode=0
-if '-e' in argv:
- exitcode=1
- argv=[w for w in argv if w != '-e']
-###############################
-smint=0
-if '-s' in argv:
- smint=1
- argv=[w for w in argv if w != '-s']
-###############################
-unhack=1
-if '-d' in argv:
- unhack=0
- argv=[w for w in argv if w != '-d']
-###############################
-if '-h' in argv:
- argv=[w for w in argv if w != '-h']
- print(hm)
- exit()
-###############################
-if '-help' in argv:
- argv=[w for w in argv if w != '-help']
- print(hm)
- exit()
-###############################
-if '--help' in argv:
- argv=[w for w in argv if w != '--help']
- print(hm)
- exit()
-###############################
-if '-gcc' in argv:
- argv=[w for w in argv if w not in '-gcc']
- q=pp('gcc --version').read()
- q=q.split()
- if len(q) > 2:
-  q=q[2]
+garg=[w[1:] for w in argv if w and w[0]=='-']
+argv=[w for w in argv if w and w[0]!='-']
+darg={'e':'exitcode','s':'smint','d':'unhack','h':'hmn','help':'hmn','-help':'hmn','u':'uncom','b':'brief','brtg':'brtg','node':'node','c':'unrun','r':'restore','f':'force','a':'bin'}
+for w in darg:
+ exec(darg[w]+'=0')
+for w in garg:
+ if w in darg:
+  exec(darg[w]+'=1')
  else:
-  q=q[0]
- q=q.split('.')[0]
- q=int(q)
- if q<10:
-  for w in io.keys():
-   if 'L' in io[w]:
-    io[w]=io[w].replace('L','ll')
+  warn('uncnown option -'+w)
+unhack=1-unhack
+uncom=1-uncom
+unrun=1-unrun
+if hmn:
+ print(hm)
+ exit()
 ###############################
-uncom=1
-if '-u' in argv:
- argv=[w for w in argv if w!='-u']
- uncom=0
+def warn(*q,**e):
+ global errness
+ cont=0
+ if 'cont' in e:
+  cont=1
+  del(e['cont'])
+ if errness:
+  global w
+  print('\x1b[1;95m[warning line '+str(w[3])+']\x1b[0m',*q,**e)
+ else:
+  print('\x1b[1;95m[warning]\x1b[0m',*q,**e)
+ global force
+ if force==0 and cont==0:
+  exit(1)
 ###############################
-brief=0
-if '-b' in argv:
- argv=[w for w in argv if w!='-b']
- brief=1
+def last():
+ q=pp('ls -t').read().split('\n')
+ eder=1
+ while eder and q:
+  if q[0] in ['outcode.cpp','a.out','index.html']:
+   q=q[1:]
+   continue
+  try:
+   open(q[0])
+  except:
+   q=q[1:]
+  else:
+   eder=0
+ if q:
+  return q[0]
+ else:
+  warn('nothing to compile')
 ###############################
-brtg=0
-if '-brtg' in argv:
- argv=[w for w in argv if w!='-brtg']
- brtg=1
+def dif(q):
+ global asym
+ a=choice(asym)
+ while a in q:
+  a+=choice(asym)
+ return a
 ###############################
-node=0
-if '-node' in argv:
- argv=[w for w in argv if w!='-node']
- node=1
+def bs(q,e):
+ q=q.split(e)
+ w=0
+ d=1
+ while d:
+  d=0
+  while w<len(q):
+   w+=1
+   if q[w-1].count('(')>q[w-1].count(')') or q[w-1].count('[')>q[w-1].count(']') or q[w-1].count('{')>q[w-1].count('}'):
+    q[w-1]+=e+q[w]
+    q=q[:w]+q[w+1:]
+    w=len(q)
+    d=1
+ return q
 ###############################
-unrun=1
-if '-c' in argv:
- argv=[w for w in argv if w != '-c']
- unrun=0
-###############################
-restore=0
-if '-r' in argv:
- argv=[w for w in argv if w!= '-restore']
- restore=1
-###############################
-def itype(q,i=0):
+def itype(q,i=0,s=0):
+ global smint
+ smi=s+smint
  q=q.strip()
+ sym=asym+'.\'"'
  if q=='':
   return ''
- if q[0]=='*':
-  q=q[1:]
- if q[0]=='-':
-  q=q[1:]
  if q[0]=='(' and ')' in q and unp(q[1:].split(')')[0],1):
   return q[1:].split(')')[0]
- if '.' in q and q.split('.')[1]=='size()':
+ b=dif(q)
+ for w in q:
+  if w not in sym:
+   q=q.replace(w,b)
+ q=[w for w in q.split(b) if w]
+ if q:
+  q=q[0]
+ else:
+  return q
+ if smi:
+  df={'strlen':'int','fopen':'file'}
+ else:
+  df={'strlen':'llint','fopen':'file'}
+ if q in df:
+  return df[q]
+ if '.' in q and q.split('.')[1]=='size':
   return itype('0')
- if '.' in q and q.split('.')[1]=='begin()':
+ if '.' in q and q.split('.')[1]=='begin':
   return itype(q.split('.')[0])
- if '.' in q and q.split('.')[1]=='end()':
+ if '.' in q and q.split('.')[1]=='end':
   return itype(q.split('.')[0])
- while q[0]=='(':
-  q=q[1:]
- e=q
- e=e.split('[')[0]
- e=e.split('(')[0]
- e=e.strip()
- e=e.split('+')[0]
- e=e.split('-')[0]
- e=e.split('*')[0]
- q=e.split('/')[0]
  if '.' in q:
   q=q.split('.')
+  if q[0].isdigit() and q[1].isdigit():
+   return 'ldouble'
   q=[w.strip() for w in q]
   return struct[itype(q[0])][q[1]]
  if q[-2:]=='LL' and (q[:-2].isdigit() or q[0]=='-' and q[1:-2].isdigit()):
   return 'llint'
  if q[-1:]=='L' and (q[:-1].isdigit() or q[0]=='-' and q[1:-1].isdigit()):
   q=int(q[:-1])
-  if smint:
+  if smi:
    if -2**63<=q<2**63:
     return 'lint'
    else:
@@ -177,7 +182,7 @@ def itype(q,i=0):
   return 'llint'
  if q.isdigit() or q[:1]=='-' and q[1:].isdigit():
   q=int(q)
-  if smint:
+  if smi:
    if -2**31<=q<2**31:
     return 'int'
    elif -2**63<=q<2**63:
@@ -219,9 +224,9 @@ def typesplit(q):
    en=w
    be=q[:-len(w)]
    break
- if 'l' in be and en == 'float':
-  be=be[:be.index('l')]+be[be.index('l')+1:]
-  en='double'
+ if en == 'double':
+  be+='l'
+  en='float'
  be=''.join(sorted(be))
  return [be,en]
 ###############################
@@ -230,7 +235,7 @@ def unp(q,ww=0,m=0):
  a=typesplit(q)
  be,en=a
  if en == 'file':
-  en='FILE'
+  en='FILE*'
   mod+=['stdlib.h']
  if en == 'str':
   en='char'
@@ -240,6 +245,14 @@ def unp(q,ww=0,m=0):
   mod+=['string']
  if en=='int' and smint==0 and m!='main':
   be+=(2-be.count('l'))*'l'
+  be=''.join(sorted(be))
+ if en=='float' and smint==0:
+  be+=(1-be.count('l'))*'l'
+  en='double'
+  be=''.join(sorted(be))
+ if en=='float' and 'l' in be:
+  en='double'
+  be=be[:be.index('l')]+be[be.index('l')+1:]
   be=''.join(sorted(be))
  if ww:
   if be+en:
@@ -253,7 +266,7 @@ def unp(q,ww=0,m=0):
   return toex+en
  return q
 ###############################
-def gio(q):
+def gio(q,c=0):
  q=typesplit(q)
  q[0]=[w for w in q[0] if w in 'lLuhH']
  q[0]=sorted(q[0])
@@ -261,29 +274,112 @@ def gio(q):
   q[1]='int'
  q[0]=''.join(q[0])
  if q[1]=='auto':
-  print('\x1b[91m[error]\x1b[0m unable to print type auto')
-  exit()
+  if c:
+   warn('unknown type auto',cont=1)
+  else:
+   warn('unknown type auto')
+  q[1]='llint'
+ if q[0]+q[1]=='':
+  warn('something is really wrong with io')
+ if q[0]+q[1] not in io:
+  warn('hard to print '+q[0]+q[1])
+  q[0]='ll'
+  q[1]='int'
  return io[q[0]+q[1]]
 ###############################
-def init(q,fun=None):
+def init(type,q=None):
+ global node
+ if node:
+  return ['',type]
+ if q==None:
+  q=type
+  q=' '.join(q.split())
+  q=q.split(' ',1)
+  if len(q)==1:
+   q=['']+q
+  if len(q)==0:
+   warn('internall error')
+   return ['','']
+  type,q=q
+ if not type:
+  warn('failed to create var '+q)
+  return ['auto',q]
  q=q.strip()
  q=' '.join(q.split())
- type,q=q.split(' ',2)
+ type=type.strip()
+# type,q=q.split(' ',1)
  q=q.strip()
  name=q.split('[')[0].split('(')[0].strip()
+ sname=name
+ if name[:1]=='*':
+  name=name[1:].strip()
  if typesplit(type)[1]=='int' and smint==0 and name!='main':
   type='llint'
+ if typesplit(type)[1]=='float' and smint==0:
+  type='llfloat'
  global listvars
  listvars[-1][name]=type
- return [type,name]
+ return [type,sname]
+###############################
+def form(a,s,sep,end):
+ a=[w.strip() for w in a]
+ a=[w for w in a if w]
+ global mod
+ mod+=['stdio.h']
+ sf=[]
+ vl=''
+ bef=''
+ aft=''
+ for w in a:
+  if w.count('=')==1 and w.split('=')[0].strip()=='sep' and w.split('=')[1].strip() and w.split('=')[1].strip()[0] in '\'"' and w.split('=')[1].strip()[-1] in '\'"':
+   sep=w.split('=')[1].strip()[1:-1]
+   continue
+  if w.count('=')==1 and w.split('=')[0].strip()=='end' and w.split('=')[1].strip() and w.split('=')[1].strip()[0] in '\'"' and w.split('=')[1].strip()[-1] in '\'"':
+   end=w.split('=')[1].strip()[1:-1]
+   continue
+  w=w.strip()
+  f=''
+  if '`' in w:
+   w,f=w.split('`')
+  if w[0]==w[-1] and w[0] in '"\'':
+   sf+=[w[1:-1]]
+  else:
+   if len(w.strip())>1:
+    type,w=init(w)
+    bef+=unp(type)+' '+w+';\n'
+   else:
+    type=itype(w)
+   if not(f):
+    f=gio(type)
+   sf+=['%'+f]
+   if type in struct:
+    rnd='_'
+    for eeee in range(32):
+     rnd+=choice(asym)
+    bef='char* '+rnd+'='+w+'.__print__();\n'
+    vl+=','+rnd
+    mod+=['stdlib.h']
+    aft+='free('+rnd+');\n'
+   elif type=='string':
+    mod+=['string']
+    vl+=','+w+'.begin()'
+    aft+=w+'='+w+'.c_str();\n'
+   elif type=='str':
+    mod+=['string.h']
+    vl+=','+w
+   elif s==0:
+    vl+=','+w
+   else:
+    vl+=',&('+w+')'
+ return [bef,sep.join(sf)+end,vl,aft]
 ###############################
 if not (argv):
- print('and what file should I compile? run with -h for help')
- exit(1)
+ argv+=[last()]
+ warn('no file selected to compile: using '+argv[-1],cont=1)
 ###############################
 if not(exists(argv[0])):
- prrint('\x1b[91m[error]\x1b[0m Could not find '+argv[0])
- exit(2)
+ warn('Could not find '+argv[0])
+ argv+=[last()]
 ###############################
 a=open(argv[0])
 q=a.read()
@@ -295,66 +391,28 @@ if restore:
  q=q.split('\n')[0]
  q=[w for w in q if w in '0123456789abcdef']
  q=''.join(q)
- print(q)
  a.write(unhexlify(q.encode()).decode())
  a.close()
- exit()
+##############################
+q=''.join([w if ord(w)<msym else ''.join(['\\'+hex(e)[1:] for e in w.encode()]) for w in q])
 ##############################
 q+='\npass\n'
 ##############################
-'''
-q=q.split('\n')
-for w in range(len(q)):
- if '#' in q[w]:
-  q[w]=q[w].replace('#','/*')+'*/'
-q='\n'.join(q)
-##############################
-q=q.replace("",chr(msym+1))#
-quo=0
-nq=''
-for w in q:
- if w == chr(msym+1):
-  quo=1-quo
- if quo and w=='\n':
-  nq+='\\n'
- else:
-  nq+=w
-q=nq.replace(chr(msym+1),'"')
-###############################
-nq=''
-bs=0
-for w in q:
- if w == '"' and quo in [1,0] and bs==0:
-  quo=1-quo
-  nq+=w
-  continue
- if w == "'" and quo in [2,0] and bs==0:
-  quo=2-quo
-  nq+=w
-  continue
- if quo:
-  nq+=chr(msym+ord(w))
- else:
-  nq+=w
- bs=0
- if w=='\\':
-  bs=1
-q=nq
-###############################
-q=''.join([chr(ord(w)%msym) for w in q])
-q=q.replace('/*',chr(msym+1))
-q=q.replace('*/',chr(msym+2))
-com=1
-nq=''
-for w in q:
- if w==chr(msym+1):
-  com=0
- if com:
-  nq+=w
- if w==chr(msym+2):
-  com=1
-q=nq
-'''
+if 'compile' in q:
+ cs1,cs=q.split('compile',1)
+ cs2=cs
+ while cs[0] in ' \t':
+  cs=cs[1:]
+ if cs[0]==':':
+  cs=cs[1:]
+  while cs[0] in ' \t':
+   cs=cs[1:]
+  if cs[0]=='\n':
+   cs=cs[1:]
+   while cs[0] in ' \t':
+    cs=cs[1:]
+   gcomp,cs=cs.split('\n',1)
+   q=cs1+cs
 ###############################
 q=''.join([chr(ord(w)%msym) for w in q])
 nq=''
@@ -417,7 +475,8 @@ while q:
    add='\\\''
   if add=='\"':
    add='\\\"'
-  nq+=add
+  for www in add:
+   nq+=chr(msym+ord(www))
  elif ws<5:
   nq+=chr(msym+ord(q[0]))
   q=q[1:]
@@ -425,15 +484,37 @@ while q:
   q=q[1:]
 q=nq
 ###############################
-q=q.replace(';','\n')
-###############################
 q=q.replace('\t',' ')
+q=q.replace('\\\n',' ')
+###############################
+nq=''
+while len(q)>1:
+ nq+=q[0]
+ if set(';\n ')&set(q[:2]):
+  pass
+ elif q[0] in asym and q[1] in asym:
+  pass
+ elif q[0] in asym and q[1] in '"\'':
+  pass
+ elif q[:2] in ['++',':=','--','==','!=','>=','<=','&&','||','<<','>>','+=','-=','*=','/=','%=','&=','|=','^=','<=','>=','->','::','""',"''"]:
+  pass
+ elif ord(max(q[:2])) >= msym:
+  pass
+ else:
+  nq+=' '
+ q=q[1:]
+q=nq+q
+###############################
+q=q.replace(';','\n')
 ###############################
 q=q.split('\n')
 ###############################
 q=[w for w in q if w != ' '*len(w)]
-q=[[0,w,''] for w in q]
+q=[[0,w,'',0] for w in q]
+linnum=0
 for w in q:
+ w[3]=linnum
+ linnum+=1
  while w[1][0] == ' ':
   w[1]=w[1][1:]
   w[0]+=1
@@ -441,22 +522,26 @@ for w in q:
   w[1]=w[1][:-1]
 ###############################
 for w in q:
- nodc=':;'+chr(msym+ord('\n'))
+ w[1]=' '.join(w[1].split())
+###############################
+for w in q:
+ nodc=':;'+chr(msym+ord('\n'))+chr(msym+ord(';'))
  if node:
   nodc+='>'
- if w[1][-1] not in nodc and w[1].split(' ')[0] not in ['import']:
+ if w[1][-1] not in nodc:
    w[1]+=';'
 ###############################
 deb=-1
 for w in q:
- if w[1][:5]=='debug' and w[1][-1]==':':
+ if w[1]=='debug :':
   deb=w[0]
-  w[1]='global:'
+  w[1]='global :'
  elif w[0]<=deb:
   deb=-1
  elif deb>-1:
   wd=w[1].split('=')
-  debug[wd[0]]=wd[1]
+  debug[wd[0].strip()]=wd[1].strip()[:-1].strip()
+  w[0]-=1
   w[1]='int debug_'+w[1]
 ###############################
 if node==0:
@@ -467,25 +552,25 @@ if node==0:
    inmain=1
   if w[1][:4] == 'def ':
    inmain=0
-  if w[1][:6] == 'global' and w[1][-1] == ':':
-   inmain=2
+  if w[1]== 'global :':
+   inmain=0
    w[1]=''
+  if w[1][:7] == 'struct ':
+   inmain=0
   if inmain==1:
    main+=[w[:]]
    w[1]=''
-  if inmain==2:
-   w[0]-=1
  q=[w for w in q if w[1] != '']
- q+=[[0,'def int main():','']]
+ q+=[[0,'def int main ( ) :','']]
  for w in main:
   w[0]+=1
  q+=main
 ###############################
 #start#
 ###############################
+errness=1
 linow=-1
 switch=[]
-defnow=[[-1,'global']]
 for w in q:
  listvars=listvars[:w[0]+1]
  while len(listvars)<w[0]+1:
@@ -495,8 +580,6 @@ for w in q:
   switch=switch[:-1]
  if w[0] <= struos:
   struop=''
- while w[0] <= defnow[-1][0]:
-  defnow=defnow[:-1]
  if switch and switch[-1][1] == -1 and w[1][-1]==':':
   switch[-1][1]=w[0]
   w1=w[1][:-1]
@@ -523,24 +606,28 @@ for w in q:
   tmpit='each_'+tmpar
   w[1]=''
   if itype('index_'+tmpit)=='':
-   init('int index_'+tmpit)
+   init('int','index_'+tmpit)
    w[1]+='int index_'+tmpit+';\n'+' '*w[0]
   if itype('tmpit')=='':
-   init(itype(tmpar)+' '+tmpit)
+   init(itype(tmpar),tmpit)
    w[1]+=unp(itype(tmpar))+' '+tmpit+';\n'+' '*w[0]
   w[1]+='for(index_'+tmpit+'=0,'+tmpit+'='+tmpar+'[index_'+tmpit+'];index_'+tmpit+'<len_'+tmpar+';'+tmpar+'[index_'+tmpit+']='+tmpit+',index_'+tmpit+'++)'
   w[2]+=tmpit+'='+tmpar+'[index_'+tmpit+'];'
  elif w[1][:7] == 'import ':
-  mod+=[w[1][7:]]
+  mod+=[w[1][7:-1]]
   w[1]=''
  elif [e for e in w[1] if e != ' '] == list('aimport;'):
-  mod+=['bits/stdc++']
+  mod+=['bits/stdc++.h']
   w[1]=''
  elif w[1][:8] == 'cimport ':
   mod+=[w[1][8:-1]+'.h']
   w[1]=''
  elif w[1][:8] == 'limport ':
   fif+=[w[1][8:-1].strip()]
+  if fif[-1]=='get':
+   init('str','gets')
+   init('int','geti')
+   init('float','getf')
   w[1]=''
  elif [e for e in w[1] if e!=' '][:3] == list('sh('):
   mod+=['stdlib.h']
@@ -553,15 +640,15 @@ for w in q:
    tmpit=w[1].split(' in ')[0].strip()
    tmpar=w[1].split(' in ')[1].strip()
    listvars+=[dict()]
-   init(itype(tmpar)+' '+tmpit)
-   w[1]='for('+itype(tmpar)+' '+tmpit+':'+tmpar+')'
+   init(itype(tmpar),tmpit)
+   w[1]='for('+unp(itype(tmpar))+' '+tmpit+':'+tmpar+')'
    '''
    w[1]=''
    if itype('index_'+tmpit)=='':
-    init('int index_'+tmpit)
+    init('int','index_'+tmpit)
     w[1]+='int index_'+tmpit+';\n'+' '*w[0]
    if itype(tmpit)!=itype(tmpar):
-    init(itype(tmpar)+' '+tmpit)
+    init(itype(tmpar),tmpit)
     w[1]+=itype(tmpar)+' '+tmpit+';\n'+' '*w[0]
    w[1]+='for(index_'+tmpit+'=0,'+tmpit+'='+tmpar+'[index_'+tmpit+'];index_'+tmpit+'<len_'+tmpar+';'+tmpar+'[index_'+tmpit+']='+tmpit+',index_'+tmpit+'++,'+tmpit+'='+tmpar+'[index_'+tmpit+'<len_'+tmpar+'-1?index_'+tmpit+':len_'+tmpar+'-1])'
    '''
@@ -643,7 +730,7 @@ for w in q:
     '''
 
    if itype(it)!=itype(end,1) and itype(end,1):
-    init(itype(end,1)+' '+it)
+    init(itype(end,1),it)
     w[1]=unp(itype(end,1))+' '+it+';\n'+' '*w[0]+w[1]
    #w[1]=ext
  elif w[1][:6] == 'while ' and w[1][-1] == ':':
@@ -704,9 +791,9 @@ for w in q:
   vat=' '.join(w[1].split()[2:])
   tmpvar=vat.split('[')[0]
   tmpcount=vat.split('[')[1].split(']')[0]
-  init(tmptype+' '+tmpvar)
-  init('int len_'+tmpvar.strip())
-  w[1]='int len_'+tmpvar.strip()+'='+tmpcount+';'+tmpouttype +'*'+tmpvar+'=('+tmpouttype+'*)calloc((len_'+tmpvar.strip()+'),sizeof('+tmpouttype+'));'
+  init(tmptype,tmpvar)
+  init('int','len_'+tmpvar.strip())
+  w[1]='int','len_'+tmpvar.strip()+'='+tmpcount+';'+tmpouttype +'*'+tmpvar+'=('+tmpouttype+'*)calloc((len_'+tmpvar.strip()+'),sizeof('+tmpouttype+'));'
  elif [e for e in w[1]][:5] == list('sort('):
   mod+='algorithm functional array iostream iterator'.split()
   uns+=['std']
@@ -714,7 +801,7 @@ for w in q:
   w[1]=w[1][4:].strip()
   tmptype=w[1].split(' ')[0]
   w[1]=' '.join(w[1].split(' ')[1:])
-  init(tmptype+' '+w[1])
+  init(tmptype,w[1])
   w[1]='vector <'+tmptype+'> '+w[1]
   mod+=['vector']
   uns+=['std']
@@ -745,32 +832,71 @@ for w in q:
   vat=' '.join(w[1].split()[2:])
   tmpvar=vat.split('[')[0]
   tmpcount=vat.split('[')[1].split(']')[0]
-  init(tmptype+' '+tmpvar)
-  init('int len_'+tmpvar.strip())
+  init(tmptype,tmpvar)
+  init('int','len_'+tmpvar.strip())
   w[1]='int len_'+tmpvar.strip()+'='+tmpcount+';'+tmpouttype +'*'+tmpvar+'=('+tmpouttype+'*)malloc(sizeof('+tmpouttype+')*(len_'+tmpvar.strip()+'));'
  elif w[1][:3] == 'if ' and w[1][-1] == ':':
   w[1]='if('+w[1][3:-1].replace(' and ',' && ').replace(' or ',' || ').replace(' not ',' ! ')+')'
- elif w[1][:4]=='scan' and [e for e in w[1] if e!=' '][:5] == list('scan('):
+ elif w[1][:7]=='gscan (':
   mod+=['stdio.h']
-  tmp1=''
-  tmp2=''
-  tmp3=''
-  tmp4=''
+  fif+=['fi']
+  w[1]=w[1].split('(')[1].split(')')[0]
+  ex=''
+  ltyp=''
+  for e in bs(w[1],','):
+   e=e.strip()
+   if ' ' in e and unp(e.split()[0],1):
+    di=init(e)
+    ltyp=di[0]
+    ex+=unp(di[0])+' '+di[1]+';'
+    e=e.split(' ',1)[1]
+   if itype(e)=='':
+    di=init(ltyp,e)
+    ex+=unp(di[0])+' '+di[1]+';'
+   eee=e
+   if itype(e)=='llint':
+    ex+=eee+'=0;while(___input1___!=45&&(48>___input1___||___input1___>57)){___input1___=getchar_fast();};if(___input1___==45){'+eee+'=0;___input1___=getchar_fast();while(___input1___>47 && ___input1___<58){'+eee+'=10*'+eee+'-___input1___+48;___input1___=getchar_fast();}}else{while(___input1___>47 && ___input1___<58){'+eee+'=10*'+eee+'+___input1___-48;___input1___=getchar_fast();}}\n'
+   if itype(e)=='str':
+    ex +='while(___input1___<33){___input1___=getchar_fast();}'+eee+'[0]=___input1___;___input1___=0;while('+eee+'[___input1___]>32){___input1___++;'+eee+'[___input1___]=getchar_fast();};___input1___='+eee+'[___input1___]+(___input1___<<8);'+eee+'[___input1___>>8]=0;___input1___%=1<<8;\n'
+   if itype(e)=='string':
+    ex+=eee+'="";while(___input1___<33){___input1___=getchar_fast();}while(___input1___>32){'+eee+'+=___input1___;___input1___=getchar_fast();}\n'
+   '''
+   if itype(e)=='llfloat':
+    ex+=eee+'=0;
+while((48>___input1___||___input1___>57)&&___input1___!=45)
+ {___input1___=getchar_fast();}
+if(___input1___==45)
+ {'+eee+'=0;___input1___=getchar_fast();while(___input1___>47 && ___input1___<58){'+eee+'=10*'+eee+'-___input1___+48;___input1___=getchar_fast();}if(___input1___==46){___input1___=getchar_fast();___input2___=1;while(___input1___>47 && ___input1___<58 && ___input2___<9223372036854775800){'+eee+'=10*'+eee+'-___input1___+48;___input1___=getchar_fast();___input2___*=10;}'+eee+'/=___input2___;while(47<___input1___&&___input1___<58({___input1___=getchar_fast()}}else{while(___input1___>47 && ___input1___<58){'+eee+'=10*'+eee+'+___input1___-48;___input1___=getchar_fast();}}\n'
+'''
+  w[1]=ex
+#}}}}}}}}}}}]]]]]]]]]]]]]]])))))))))))
+ elif w[1][:6]=='scan (' or '. read (' in w[1] and itype(w[1]) in ['string','str','file']:
+  varray=[]
+  sss=0
+  if '. read (' in w[1] and itype(w[1]) in ['string','str','file']:
+   sss=1
+   strin=w[1].split(' . read (')[0]
+   if itype(w[1])=='file':
+    mod+=['stdlib.h']
+   else:
+    mod+=['string.h']
+  mod+=['stdio.h']
+#  tmp1=''
+#  tmp2=''
+#  tmp3=''
+#  tmp4=''
   w[1]=w[1].split('(',2)[1]
   w[1]=')'.join(w[1].split(')')[:-1])
-  file=w[1].split(',')[0]
-  if itype(file)=='file':
-   w[1]=w[1].split(',',2)[1]
-  else:
-   file=''
-  for e in w[1].split(','):
+  bef,sf,vl,aft=form(bs(w[1],','),1,'','')
+  '''
+  for e in bs(w[1],','):
    if len(e.split())>1 and unp(e.split()[0],1):
     tmp3+=unp(e.split()[0])+' '+' '.join(e.split()[1:])+';\n'+' '*w[0]
-    tmp1+='%'+gio(init(e.split()[0]+' '+' '.join(e.split()[1:]))[0])
+    tmp1+='%'+gio(init(e)[0])
     cadd=1
     if e.split()[0] in ['string','str']:
      cadd=1-cadd
-    tmp2+=','+'&('*cadd+' '.join(e.split()[1:])+('.begin()' if e.split()[0]=='string' else '')+')'*cadd
+    tmp2+=','+'&('*cadd+e.strip().split(' ',1)[1]+('.begin()' if e.split()[0]=='string' else '')+')'*cadd
     if e.split()[0] == 'string':
      tmp4+=' '.join(e.split()[1:])+'='+' '.join(e.split()[1:])+'.c_str();'
     continue
@@ -785,9 +911,14 @@ for w in q:
    elif '`' in e:
     tmp1+='%'+e.split('`')[1].strip()
     tmp2+=','+'&('*add+e.split('`')[0].strip()+')'*add
-   else:
+   else: 889     cadd=1
+ 890     if e.split()[0] in ['string','str']:
+
+
     tmptype=e.split('[')[0].strip().replace('*','').strip()
     deffo=itype(tmptype)
+    if force and not deffo:
+     deffo='llint'
     if deffo:
      tmp1+='%'+gio(deffo)
      cadd=add
@@ -797,26 +928,86 @@ for w in q:
       cadd=1-cadd
      tmp2+=','+'&('*cadd+e.strip()+('.begin()' if deffo=='string' else '')+')'*cadd
     else:
-     prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m could not scan '+tmptype+' at '+w[1])
-     exit(5)
-  if file:
-   w[1]=tmp3+'fscanf('+file+',"'+tmp1+'"'+tmp2+');'+tmp4
+     warn('could not scan '+tmptype+' at '+w[1])
+  '''
+  if sss:
+   if itype(strin)=='file':
+    w[1]=bef+'fscanf('+file+',"'+sf+'"'+vl+');'+aft
+   else:
+    w[1]=bef+'sscanf('+strin+('.begin()' if itype(strin)=='string' else ' ')+',"'+sf+'"'+vl+');'+aft
   else:
-   w[1]=tmp3+'scanf("'+tmp1+'"'+tmp2+');'+tmp4
- elif w[1][:5]=='print' and [e for e in w[1] if e!=' '][:6] == list('print('):
+   w[1]=bef+'scanf("'+sf+'"'+vl+');'+aft
+ elif w[1][:8]=='gprint (':
+  fif+=['fo']
+  mod+=['stdio.h']
+  w[1]=w[1].split('(')[1].split(')')[0]
+  ex=''
+  sep=1
+  end=1
+  ii=0
+  ia=[]
+  for e in bs(w[1],','):
+   e=e.strip()
+   if e and e[0]=='=' and e[1:].strip()=='nosep':
+    sep=0
+   elif e and e[0]=='=' and e[1:].strip()=='noend':
+    end=0
+   else:
+    ia+=[e]
+  for e in ia:
+   ii+=1
+   if ii==len(ia):
+    sep=0
+   e=e.strip()
+   eee=e
+   if itype(e)=='llint':
+    ex +='___print2___='+eee+';if(___print2___==0){putchar_fast(48);}else{if(___print2___>0){___print1___=1;while(___print1___<=___print2___){___print1___*=10;}while(___print1___>1){___print1___/=10;putchar_fast(___print2___/___print1___%10+48);}}else{putchar_fast(45);___print1___=-1;while(___print1___>=___print2___){___print1___*=10;}while(___print1___<-1){___print1___/=10;putchar_fast(48+___print2___/___print1___%10);}}}\n'
+   if itype(e)=='str':
+    ex +='___print1___=0;while('+eee+'[___print1___]!=0){putchar_fast('+eee+'[___print1___++]);}\n'
+   if itype(e)=='string':
+    ex +='___print1___=0;while('+eee+'.size()!=___print1___){putchar_fast('+eee+'[___print1___++]);}\n'
+   if e and e[0]=="'"==e[-1]:
+    e='"'+e[1:-1]+'"'
+    eee=e
+   if e and e[0]=='"'==e[-1]:
+    ex +='___print1___=0;while('+eee+'[___print1___]!=0){putchar_fast('+eee+'[___print1___++]);}\n'
+   if itype(e) in struct:
+    ex+=eee+'.__print__();\n'
+   if sep:
+    ex+='putchar_fast(32);'
+  w[1]=ex+('putchar_fast(10);'if end else '')
+ elif w[1][:7]=='print ('or '=' in w[1] and '[' not in w[1].split('=')[0] and itype(w[1]) in ['str','string'] or '. write (' in w[1] and itype(w[1]) in ['file']:
+  sss=0
+  if itype(w[1]) in ['str','string']:
+   sss=1
+   strin=w[1].split('=')[0]
+   if strin[-1]=='+':
+    sss=2
   mod+=['stdio.h']
   tmp1=[]
   tmp2=''
-  sep=' '
-  end='\\n'
-  w[1]='('.join(w[1].split('(')[1:])
-  w[1]=')'.join(w[1].split(')')[:-1])
-  file=w[1].split(',')[0]
-  if '.' not in file and itype(file)=='file':
-   w[1]=','.join(w[1].split(',')[1:])
+  tmp4=''
+  if sss==0:
+   sep=' '
+   end='\\n'
+   if '. write (' in w[1] and itype(w[1]) in ['file']:
+    file=w[1].split('. write (')[0]
+   else:
+    file=''
+   w[1]='('.join(w[1].split('(')[1:])
+   w[1]=')'.join(w[1].split(')')[:-1])
   else:
-   file=''
-  for e in w[1].split(','):
+   sep=''
+   end=''
+   if strin[-1]=='+':
+    strin=strin[:-1]
+   w[1]=w[1].split('=',1)[1]
+   if sss==2:
+    w[1]=strin+'+'+w[1]
+   w[1]=w[1][:-1]
+  [bef,sf,vl,aft]=form(bs(w[1],'+' if sss else ','),0,sep,end)
+  '''
+  for e in bs(w[1],'+' if sss else ','):
    e=e.strip()
    if e=='':
     pass
@@ -833,19 +1024,25 @@ for w in q:
     tmp2+=','+e.split('`')[0].strip()
    else:
     tmptype=e.split('[')[0].strip().replace('*','')
-    deffo=itype(tmptype)
+    deffo=itype(tmptype,s=1)
+    if force and not deffo:
+     deffo='llint'
     if deffo:
      tmp1+=['%'+gio(deffo)]
      tmp2+=','+e.strip()+('.begin()' if deffo=='string' else '')
     else:
-     prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m could not print '+tmptype+' at '+w[1])
-     exit(6)
-  if file:
-   w[1]='fprintf('+file+',"'+sep.join(tmp1)+end+'"'+tmp2+');'
+     warn('could not print '+tmptype+' at '+w[1])
+  '''
+  if sss and itype(strin)=='string':
+   aft+=strin+'='+strin+'.c_str();'
+  if sss:
+   w[1]=bef+'sprintf('+strin+('.begin()' if itype(strin)=='string' else '')+',"'+sf+'"'+vl+');'+aft
+  elif file:
+   w[1]=bef+'fprintf('+file+',"'+sf+'"'+vl+');'+aft
   else:
-   w[1]='printf("'+sep.join(tmp1)+end+'"'+tmp2+');'
+   w[1]=bef+'printf("'+sf+'"'+vl+');'+aft
   if 'printlimit' in debug:
-   w[1]+='debug_printlimit--;if (debug_printlimit < 0) {printf("\033[31m[debug_printlimit]\033[0m\\n");return 0;}'
+   w[1]+='debug_printlimit--;if (debug_printlimit <= 0) {printf("\033[1;91m[debug_printlimit]\033[0m\\n");auto debug_printlimit=((int*)(0))[-1];printf("%'+gio(itype('debug_printlimit'))+'",debug_printlimit);}'
  elif w[1][:4] == 'def ' and w[1][-1] == ':':
   w[1]=w[1][4:-1]
   if len(w[1].split('(')[0].split())<2:
@@ -853,20 +1050,44 @@ for w in q:
     w[1]='function '+w[1]
    else:
     w[1]='auto '+w[1]
-   #prrint('\x1b[91m[error line '+str(linow)+']\x1b[0m unktown type of function: '+w[1])
-   #exit()
-  defnow+=[[w[0],w[1].split('(')[0].split()[1]]]
   nw=init(w[1].split('(')[0])
+  if struct:
+   rep={'__init__':list(struct.keys())[-1],'__del__':'~'+list(struct.keys())[-1]}
+  else:
+   rep=dict()
+  rep1={'add':'+','sub':'-','mul':'*','div':'/','mod':'%','lshift':'<<','rshift':'>>','call':'()','sqcall':'[]','dot':'.','eq':'==','set':'=','band':'&','bxor':'^','bor':'|','land':'&&','lor':'||','inc':'++','dec':'--'}
+  for e in rep1:
+   rep['__'+e+'__']='operator'+rep1[e]
+   rep['__self__'+e+'__']='operator'+rep1[e]+'='
   listvars+=[dict()]
-  nw=unp(nw[0],m=nw[1])+' '+nw[1]+'('
+  if nw[1] in ['__init__','__del__']:
+   nw[0]=''
+  if nw[1] in rep:
+   nw[1]=rep[nw[1]]
+  nwt=nw[1]
+  nw=unp(nw[0],m=nw[1])
+  nwlt=[]
   nwl=[]
-  for e in w[1].split('(')[1].split(')')[0].split(','):
+  nwto=[]
+  nwlw=[]
+  for e in bs(w[1].split('(')[1].split(')')[0],','):
    if e != ' '*len(e):
+    e=e.split('=')
+    e,ewe=e[0],e[1:]
     if ' ' not in e.strip():
-     e='auto '+e
+     if node==0:
+      e='auto '+e
     tmp=init(e)
-    nwl+=[unp(tmp[0])+' '+tmp[1]]
-  w[1]=nw+','.join(nwl)+')'
+    nwlt+=[[tmp[0],'='.join([tmp[1]]+ewe)]]
+    nwl+=[unp(tmp[0])+' '+'='.join([tmp[1]]+ewe)]
+    nwlw+=[unp(tmp[0])+' '+tmp[1]]
+    nwto+=[tmp[1]]
+  if 'recursionshow' in debug:
+   mod+=['stdio.h']
+   bef,sf,vl,aft=form(nwto,0,' ','\n')
+   w[1]=nw+' '+'_'+nwt+'('+','.join(nwl)+');'+nw+' '+nwt+'('+','.join(nwl)+'){int ___;for(___=0;___<debug_recursionshow;___++){printf(" ");}'+bef+'printf("'+nwt+'('+sf+')"'+vl+');'+aft+'debug_recursionshow++;'+('debug_printlimit--;if (debug_printlimit <= 0) {printf("\033[1;91m[debug_printlimit]\033[0m\\n");auto debug_printlimit=((int*)(0))[-1];printf("%'+gio(itype('debug_printlimit'))+'",debug_printlimit);}' if 'printlimit' in debug else ' ')+'auto ____=_'+nwt+'('+','.join([e for e in nwto])+');debug_recursionshow--;return ____;}'+nw+' _'+nwt+'('+','.join(nwlw)+')'
+  else:
+   w[1]=nw+' '+nwt+'('+','.join(nwl)+')'
  elif w[1][:7] == 'struct ' and w[1][-1]==':':
   struop=w[1][7:-1].strip()
   struct[struop]=dict()
@@ -880,24 +1101,21 @@ for w in q:
    ee=e.split('=')[0]
    if struop:
     struct[struop][ee]=tmptype
-   else:
-    init(tmptype+' '+ee)
+   init(tmptype,ee)
    nw+=e+','
-  if tmptype in struct:
-   nw=nw
   w[1]=nw[:-1]+';'
  elif node == 0 and '=' in w[1] and set(w[1].split('=')[0].strip()) | set(asym) == set(asym) and itype(w[1].split('=')[0])=='':
-  init(itype(w[1][:-1].split('=')[1])+' '+w[1].split('=')[0])
-  w[1]=unp(itype(w[1][:-1].split('=')[1]))+' '+w[1]
+  tmpty=itype(w[1][:-1].split('=')[1])
+  init(tmpty,w[1].split('=')[0])
+  w[1]=unp(tmpty)+' '+w[1]
  elif ':=' in w[1]:
   w[1]=w[1].replace(':=','=')
  if w[1]:
-  bou=''.join([e for e in w[1] if e in asym])
-  while bou in w[1]:
-   bou+=str(time())
+  bou=dif(w[1])
   w[1]=w[1].replace(')',bou+')').replace('(','('+bou).split(bou)
-  w[1]=[unp(e) if e and e[0] not in '()' and e[-1] not in '()' and unp(e,1) else e for e in w[1]]
+  w[1]=[unp(e)+('*' if '*' in e else ' ') if e and e[0] not in '()' and e[-1] not in '()' and unp(e,1) else e for e in w[1]]
   w[1]=''.join(w[1])
+errness=0
 ###############################
 q+=[[0,'','']]
 struop=-1
@@ -919,20 +1137,21 @@ q=('\n').join(q)
 ###############################
 q=q.split('\n')
 ###############################
-w=0
-while 'int main()' not in q[w]:
- w+=1
-q1=[]
-q4=q[:w]
-q2=q[w:]
-q3=[]
-for w in q2:
- if 'one_string_global ' in w:
-  w=w.replace('one_string_global ','')
-  q1+=[w]
- else:
-  q3+=[w]
-q=q1+q4+q3
+if node==0:
+ w=0
+ while 'int main()' not in q[w]:
+  w+=1
+ q1=[]
+ q4=q[:w]
+ q2=q[w:]
+ q3=[]
+ for w in q2:
+  if 'one_string_global ' in w:
+   w=w.replace('one_string_global ','')
+   q1+=[w]
+  else:
+   q3+=[w]
+ q=q1+q4+q3
 ###############################
 q=('\n'*unhack).join(q)
 ###############################
@@ -944,20 +1163,43 @@ for w in uns:
  mods+='using namespace '+w+';\n'
 fif=list(set(fif))
 for w in fif:
- if w=='scani':
-  mods+='int scani(){int q;scanf("%i",&q);return q;}\n'
-  mod+=['stdio.h']
+ if w=='get':
+  mods+='''
+char *gets(){char a[101010];scanf("%s",a);auto s=(char*)malloc(strlen(a)+1);strcpy(s,a);return s;}
+char *gets(FILE *d){char a[101010];fscanf(d,"%s",a);auto s=(char*)malloc(strlen(a)+1);strcpy(s,a);return s;}
+char *gets(char *d){char a[101010];sscanf(d,"%s",a);auto s=(char*)malloc(strlen(a)+1);strcpy(s,a);return s;}
+long long int geti(){long long int q;scanf("%Li",&q);return q;}
+long long int geti(FILE *a){long long int q;fscanf(a,"%Li",&q);return q;}
+long long int geti(char *a){long long int q;sscanf(a,"%Li",&q);return q;}
+long double getf(){long double q;scanf("%Lf",&q);return q;}
+long double getf(FILE *a){long double q;fscanf(a,"%Lf",&q);return q;}
+long double getf(char *a){long double q;sscanf(a,"%Lf",&q);return q;}
+'''
+  mod+=['stdio.h','string.h','stdlib.h']
  if w=='rand':
-  mmods+='\nsrand(time(NULL));'
+  mmods+='srand(time(NULL));\n'
   mod+=['stdlib.h','time.h']
+ if w=='fi':
+  mods+='#define getchar_fast() '+(('getchar()\n'  if debug['iolock']!='0' else '(__glibc_unlikely(stdin->_IO_read_ptr>=stdin->_IO_read_end)?__uflow(stdin):*(unsigned char*)stdin->_IO_read_ptr++)\n') if 'iolock' in debug else 'getchar_unlocked()\n')
+  mods+='long long int ___input2___,___input1___=getchar_fast();\n'
+  mod+=['stdio.h']
+ if w=='fo':
+  mods+='#define putchar_fast(_ch) '+(('putchar(_ch)\n' if debug['iolock']!='0' else '(__glibc_unlikely(stdout->_IO_write_ptr>=stdout->_IO_write_end)?__overflow(stdout,(unsigned char)(_ch)):(unsigned char)(*stdout->_IO_write_ptr++ =(_ch)))\n') if 'iolock' in debug else 'putchar_unlocked(_ch)\n')
+  mod+=['stdio.h']
+  mods+='long long int ___print1___,___print2___;\n'
+ if w=='mmd':
+  mods+='#define min(a,b) ((a)<(b)?(a):(b))\n'
+  mods+='#define max(a,b) ((a)<(b)?(b):(a))\n'
 rmods=''
 mod=list(set(mod))
 for w in mod:
  rmods+='#include <'+w+'>\n'
 q=rmods+mods+q
-q=q.replace('int main(){','int main(){'+mmods)
+q=q.replace('int main(){\n','int main(){\n'+mmods)
 ###############################
 q=''.join([chr(ord(w)%msym) for w in q])
+###############################
+q='#pragma GCC optimize("Ofast")\n'+q
 ###############################
 ort=hexlify(ort.encode()).decode()
 if node:
@@ -970,21 +1212,21 @@ a.close()
 ###############################
 if unrun:
  if brief:
-  #qq=sh('(g++ outcode.cpp 2>&1) > out__tmp____')
-  #qqq=open('out__tmp____').read()
-  #sh('rm out__tmp____')
-  if qq:
-   print(qqq[:256])
-   exit()
+  qq=sh('(g++ outcode.cpp 2>&1) > out__tmp____')
+  qqq=open('out__tmp____').read()[:256]+'\x1b[0m'
+  sh('rm out__tmp____')
  else:
-  if sh('g++ outcode.cpp'):
-   exit()
+  qq=sh(gcomp.format('outcode.cpp'))
+ if qq:
+  warn('internal error')
+  exit(qq)
  try:
-  q=sh('./a.out')
+  if bin==0:
+   q=sh('./a.out')
  except KeyboardInterrupt:
   if exitcode==0:
    print()
  else:
   if exitcode:
-   prrint('\x1b[93m[exit code: '+str(q)+']\x1b[0m')
+   print('\x1b[1;93m[exit code: '+str(q)+']\x1b[0m')
   exit(q)
