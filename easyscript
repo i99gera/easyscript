@@ -20,8 +20,10 @@ asym='qazwsxedcrfvtgbyhnujmikolp_QAZWSXEDCRFVTGBYHNUJMIKOLP0192837465'
 quo=0
 struct=dict()
 maint=['str','int','float','char','double','bool','void','file','auto','string']
-unpac={'c':'const','u':'unsigned','l':'long','s':'static','e':'extern','g':'one_string_global'}
+unpac={'h':'short','c':'const','u':'unsigned','l':'long','s':'static','e':'extern','g':'one_string_global'}
 io={
+ 'hint':'h',
+ 'hhint':'hh',
  'int':'i',
  'lint':'li',
  'llint':'Li',
@@ -53,6 +55,7 @@ args can be:
 -d	makes .cpp code dirty and unreadable, can be used for creating encrypted code, but in case of using without -u file can be decompiled and read
 -b	in case of error displays only first 256 symbols of error msg
 -e	show exit code
+-s	make int smaller
 args cannot be joined, for example use -b -c instead of -bc
 running without args will compile and run
 '''
@@ -61,6 +64,11 @@ exitcode=0
 if '-e' in argv:
  exitcode=1
  argv=[w for w in argv if w != '-e']
+###############################
+smint=0
+if '-s' in argv:
+ smint=1
+ argv=[w for w in argv if w != '-s']
 ###############################
 unhack=1
 if '-d' in argv:
@@ -161,9 +169,21 @@ def itype(q,i=0):
   return 'llint'
  if q[-1:]=='L' and (q[:-1].isdigit() or q[0]=='-' and q[1:-1].isdigit()):
   q=int(q[:-1])
+  if smint:
+   if -2**63<=q<2**63:
+    return 'lint'
+   else:
+    return 'llint'
   return 'llint'
  if q.isdigit() or q[:1]=='-' and q[1:].isdigit():
   q=int(q)
+  if smint:
+   if -2**31<=q<2**31:
+    return 'int'
+   elif -2**63<=q<2**63:
+    return 'lint'
+   else:
+    return 'llint'
   return 'llint'
  if q[0]==q[-1]=="'":
   return 'char'
@@ -205,18 +225,10 @@ def typesplit(q):
  be=''.join(sorted(be))
  return [be,en]
 ###############################
-def unp(q,ww=0):
+def unp(q,ww=0,m=0):
  global mod
  a=typesplit(q)
  be,en=a
- if ww in [2,3]:
-  if be+en:
-   if ww == 2:
-    return ''.join(sorted(be))+en
-   if ww == 3:
-    return [''.join(sorted(be)),en]
-  else:
-   return q
  if en == 'file':
   en='FILE'
   mod+=['stdlib.h']
@@ -226,6 +238,9 @@ def unp(q,ww=0):
  if en == 'string':
   en='std::string'
   mod+=['string']
+ if en=='int' and smint==0 and m!='main':
+  be+=(2-be.count('l'))*'l'
+  be=''.join(sorted(be))
  if ww:
   if be+en:
    return 1
@@ -239,8 +254,8 @@ def unp(q,ww=0):
  return q
 ###############################
 def gio(q):
- q=unp(q,3)
- q[0]=[w for w in q[0] if w in 'lLu']
+ q=typesplit(q)
+ q[0]=[w for w in q[0] if w in 'lLuhH']
  q[0]=sorted(q[0])
  if q[1]=='bool':
   q[1]='int'
@@ -256,6 +271,8 @@ def init(q,fun=None):
  type,q=q.split(' ',2)
  q=q.strip()
  name=q.split('[')[0].split('(')[0].strip()
+ if typesplit(type)[1]=='int' and smint==0 and name!='main':
+  type='llint'
  global listvars
  listvars[-1][name]=type
  return [type,name]
@@ -549,7 +566,8 @@ for w in q:
    w[1]+='for(index_'+tmpit+'=0,'+tmpit+'='+tmpar+'[index_'+tmpit+'];index_'+tmpit+'<len_'+tmpar+';'+tmpar+'[index_'+tmpit+']='+tmpit+',index_'+tmpit+'++,'+tmpit+'='+tmpar+'[index_'+tmpit+'<len_'+tmpar+'-1?index_'+tmpit+':len_'+tmpar+'-1])'
    '''
   else:
-   test=w[1].split(':',2)[1].replace(' and ',' && ').replace(' or ',' || ').replace(' not ',' ! ')
+   test=w[1].split(':',1)
+   test=test[1].replace(' and ',' && ').replace(' or ',' || ').replace(' not ',' ! ') if len(test)>1 else ''
    w[1]=w[1].split(':')[0]
    te=0
    if '<' in w[1] or '>' in w[1]:
@@ -748,12 +766,11 @@ for w in q:
   for e in w[1].split(','):
    if len(e.split())>1 and unp(e.split()[0],1):
     tmp3+=unp(e.split()[0])+' '+' '.join(e.split()[1:])+';\n'+' '*w[0]
-    init(e.split()[0]+' '+' '.join(e.split()[1:]))
-    tmp1+='%'+gio(e.split()[0])
+    tmp1+='%'+gio(init(e.split()[0]+' '+' '.join(e.split()[1:]))[0])
     cadd=1
     if e.split()[0] in ['string','str']:
      cadd=1-cadd
-    tmp2+=','+'&('*cadd+' '.join(e.split()[1:])+('.begin()' if deffo=='string' else '')+')'*cadd
+    tmp2+=','+'&('*cadd+' '.join(e.split()[1:])+('.begin()' if e.split()[0]=='string' else '')+')'*cadd
     if e.split()[0] == 'string':
      tmp4+=' '.join(e.split()[1:])+'='+' '.join(e.split()[1:])+'.c_str();'
     continue
@@ -841,7 +858,7 @@ for w in q:
   defnow+=[[w[0],w[1].split('(')[0].split()[1]]]
   nw=init(w[1].split('(')[0])
   listvars+=[dict()]
-  nw=unp(nw[0])+' '+nw[1]+'('
+  nw=unp(nw[0],m=nw[1])+' '+nw[1]+'('
   nwl=[]
   for e in w[1].split('(')[1].split(')')[0].split(','):
    if e != ' '*len(e):
