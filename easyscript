@@ -1199,7 +1199,8 @@ q=q.replace('int main(){\n','int main(){\n'+mmods)
 ###############################
 q=''.join([chr(ord(w)%msym) for w in q])
 ###############################
-q='#pragma GCC optimize("Ofast")\n'+q
+if node==0:
+ q='#pragma GCC optimize("Ofast")\n'+q
 ###############################
 ort=hexlify(ort.encode()).decode()
 if node:
