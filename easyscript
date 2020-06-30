@@ -731,7 +731,8 @@ for w in q:
 
    if itype(it)!=itype(end,1) and itype(end,1):
     init(itype(end,1),it)
-    w[1]=unp(itype(end,1))+' '+it+';\n'+' '*w[0]+w[1]
+    if node==0:
+     w[1]=unp(itype(end,1))+' '+it+';\n'+' '*w[0]+w[1]
    #w[1]=ext
  elif w[1][:6] == 'while ' and w[1][-1] == ':':
   w[1]='while('+w[1][6:-1].replace(' and ',' && ').replace(' or ',' || ').replace(' not ',' ! ')+')'
